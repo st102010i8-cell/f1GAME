@@ -1,0 +1,66 @@
+'use strict';
+/* Grid 2026 — 新手教學 */
+/* ================= TUTORIAL ================= */
+// guided session on the practice track: info cards freeze the sim, task cards wait for the player to do the thing
+let tut=null,tutSave=null;
+const tutTouch=()=>!$('touch').hidden;
+const tK=a=>{const k=settings.keys[a].filter(Boolean);return k.length?k.map(c=>'<kbd>'+keyName(c)+'</kbd>').join(' 或 '):'<kbd>未設定</kbd>'};
+function tutPlace(s0){const c=player,q=at(s0,0,{});Object.assign(c,{x:q.x,y:q.y,z:q.z,h:q.h,s:wrapS(s0),d:0,idx:q.i,v:0,yaw:0,steer:0,gear:1,pside:0,xmode:false,aero:0})}
+const tutZoneS=()=>ZONES.length?wrapS(ZONES[0].a+8):-30;
+const TUT=[
+ {t:'歡迎來到 Grid 2026',info:1,b:()=>'接下來約 3 分鐘，帶你學會開車、看懂儀表，再認識 2026 年規則的三個重點：<b>直道模式</b>、<b>電能部署</b>、<b>Overtake</b>。這裡是練習賽道，場上只有你一台車，放心開。'},
+ {t:'看懂儀表',info:1,hi:()=>['cluster'],b:()=>'下方儀表中間的大數字是<b>檔位</b>，下面是<b>時速</b>。外圈白色弧線是<b>轉速</b>，內圈黃色弧線是<b>電池電量</b>。旁邊兩條直條顯示煞車和油門踩多深。'},
+ {t:'油門',hi:()=>tutTouch()?['tThr']:[],b:()=>(tutTouch()?'按住右下的<b>油門踏板</b>，手指放得越高踩得越深。':`按住 ${tK('throttle')} 踩油門。`)+'把時速拉到 <b>150 km/h</b>。',
+  run:p=>{const v=Math.max(0,Math.round(p.v*3.6));return [v>=150,`目前 ${v} / 150 km/h`]}},
+ {t:'煞車',hi:()=>tutTouch()?['tBrake']:[],b:()=>(tutTouch()?'按住<b>煞車踏板</b>':`按住 ${tK('brake')}`)+'，把時速降到 <b>60 km/h 以下</b>。重煞同時會幫電池充電。正式賽道的彎前路邊有 200、150、100、50 公尺的距離牌，用來抓煞車點。路面上的<b>賽車線</b>也會提示：綠色全油門、黃色鬆油、<b>紅色要重煞</b>。',
+  run:(p,dt,st)=>{if(Math.max(input.brkK,input.brkT)>0.3)st.b=1;const v=Math.max(0,Math.round(p.v*3.6));return [!!st.b&&v<60,`目前 ${v} km/h，目標 60 以下`]}},
+ {t:'轉向',hi:()=>tutTouch()?['tWheel']:[],b:()=>(tutTouch()?({drag:'在左下的<b>正方形轉向區</b>按住後左右滑動，放開會自動回正。',rotate:'按住左下的<b>方向盤</b>，繞著中心轉動，放開會自動回正。',buttons:'左下的正方形分成<b>◀</b>、<b>▶</b>兩半，按住就會轉向，可以直接滑到另一邊。'})[steerMode()]:`用 ${tK('left')} 左轉、${tK('right')} 右轉。`)+'左右各轉一次。車速越快能轉的角度越小，所以要<b>先煞車、再進彎</b>。',
+  run:(p,dt,st)=>{if(p.steer>0.5)st.l=(st.l||0)+dt;if(p.steer<-0.5)st.r=(st.r||0)+dt;const L=st.l>0.3,R=st.r>0.3;return [L&&R,`左轉 ${L?'✓':'—'}　右轉 ${R?'✓':'—'}`]}},
+ {t:'換檔',info:()=>settings.assist.gearbox!=='manual',hi:()=>tutTouch()&&settings.assist.gearbox==='manual'?['tUp','tDn']:['cluster'],
+  b:()=>settings.assist.gearbox==='manual'?`你用的是<b>手動換檔</b>：${tutTouch()?'「▲ 升」升檔、「▼ 降」降檔':`${tK('shiftUp')} 升檔、${tK('shiftDown')} 降檔`}。轉速弧線快滿時升檔。加速並升到 <b>3 檔</b>。`:`目前是<b>自動換檔</b>，電腦會幫你換，不用管。想自己換的話，到「暫停 → 設定 → 輔助與起跑」改成手動，${tutTouch()?'畫面上會多出升檔、降檔兩顆鈕':`用 ${tK('shiftUp')} 升檔、${tK('shiftDown')} 降檔`}。`,
+  run:p=>[p.gear>=3,`目前 ${p.gear} 檔，目標 3 檔`]},
+ {t:'直道模式 X-MODE',hi:()=>tutTouch()?['mX','tX']:['mX'],enter:()=>tutPlace(tutZoneS()),
+  b:()=>'2026 年沒有 DRS，改成<b>主動空力</b>：在指定的直道區段，可以把前後翼放平來降低阻力、提高極速。踩煞車或離開區段會自動收回。已經把你移到直道起點，'+(settings.assist.aero==='auto'?'你的設定是自動展開，<b>踩油門加速</b>就會看到 X-MODE 亮起。':`踩油門後按 ${tutTouch()?'<b>X</b> 鈕':tK('aero')} 展開。`),
+  run:(p,dt,st)=>{if(zoneAt(p.s)<0){tutPlace(tutZoneS());toast('再試一次');st.h=0}if(p.aero>0.6&&p.v>8)st.h=(st.h||0)+dt;return [st.h>1.5,p.aero>0.6?'X-MODE 已展開，繼續加速':'X-MODE 尚未展開']}},
+ {t:'電能模式 ERS',hi:()=>tutTouch()?['mERS','mDep','tMode']:['mERS','mDep'],enter:(p,st)=>{const S=settings.setup;st.m0=S.mode;st.t0=S.trim.slice()},exit:(p,st)=>{if(st.t0){const S=settings.setup;S.mode=st.m0;S.trim=st.t0;saveSettings()}},
+  b:()=>`賽車有一顆 350 kW 的電動機，電池靠煞車和鬆油充電。電能有四種模式：<b>無</b>（0 kW，全力回收）、<b>中</b>（140 kW）、<b>快</b>（220 kW）、<b>超</b>（280 kW，常規上限）。再往上就要開 OT。${tutTouch()?'點右邊「超／快／中／無」那一條切換':`按 ${tK('ersUp')} 往上、${tK('ersDown')} 往下切換`}。試著換一個模式。`,
+  run:(p,dt,st)=>{const S=settings.setup;return [S.mode!==st.m0||S.trim.join()!==st.t0.join(),`目前：${ERS_MODES[S.mode].full} · ${deployKW()} kW`]}},
+ {t:'Overtake 超車模式',hi:()=>tutTouch()?['mOT','tOT']:['mOT'],exit:p=>{p.otAvail=false;p.otActive=false;otOn=false},
+  b:()=>`每圈最後一段直道前有一個<b>偵測點</b>。通過時如果和前車差距在 <b>1 秒內</b>，接下來<b>一整圈</b>開 OT 會解鎖完整 <b>350 kW</b>，可以用到 337 km/h（平常 290 km/h 起就開始遞減），電量環會變成<b>粉紫色閃爍</b>。沒有這個資格時 OT 一樣能開，輸出是 315 kW。OT 開著的時候只放電、不回充，用完記得關。教學先幫你解鎖了：按 ${tutTouch()?'<b>OT</b> 鈕':tK('overtake')} 試試看。`,
+  run:(p,dt,st)=>{if(!p.otActive)p.otAvail=true;else st.h=(st.h||0)+dt;return [st.h>2,p.otActive?'Overtake 啟動中，看儀表的電量環':'OVERTAKE 燈已亮，等你啟動']}},
+ {t:'切換視角',hi:()=>tutTouch()?['tCam']:[],enter:(p,st)=>{st.c0=camMode},
+  b:()=>`按 ${tutTouch()?'<b>視角</b>鈕':tK('camera')} 可以在<b>追尾</b>、<b>駕駛艙</b>、<b>車頂</b>三種視角間循環。切換一次，之後選你順手的就好。`,
+  run:(p,dt,st)=>[camMode!==st.c0,'目前：'+CAM_NAME[camMode]]},
+ {t:'起跑與賽道界線',info:1,b:()=>`正賽起跑時五盞紅燈會依序亮起，<b>全部熄滅</b>才能出發，提早動會被罰 5 秒。想起步更快可以用<b>彈射起步</b>：紅燈時按住離合器再踩油門，把轉速停在儀表外圈的綠色區，燈滅瞬間放開。衝出賽道路面會變滑，撞牆會掉速。卡住的時候${tutTouch()?'，到暫停選單重新開始':`按 ${tK('reset')} 回到賽道中央`}。`},
+ {t:'維修區與輪胎',info:1,b:()=>'輪胎會慢慢磨損，抓地力跟著下降，儀表旁會顯示磨損百分比。進維修道後會自動限速 <b>80 km/h</b>，停在自己車隊的<b>黃色格子</b>約 2 秒就會換上新胎。'},
+ {t:'教學完成',final:1,b:()=>'基本操作和主要規則都跑過一遍了。你可以留在這裡自由練習，或回主選單選車隊和賽道。之後想再看一次，主選單右上角有「新手教學」。'}
+];
+function tutHi(ids){document.querySelectorAll('.tutHi').forEach(e=>e.classList.remove('tutHi'));ids.forEach(id=>{const e=$(id);if(e)e.classList.add('tutHi')})}
+function tutExit(){const s=tut&&TUT[tut.i];if(s&&s.exit&&player)s.exit(player,tut.st)}
+function tutGo(i){tutExit();tut.i=i;tut.st={};tut.okT=0;const s=TUT[i];
+  tut.info=typeof s.info==='function'?s.info():!!s.info;tut.frz=tut.info||!!s.final;
+  if(s.enter)s.enter(player,tut.st);
+  $('tutN').textContent=`步驟 ${i+1} / ${TUT.length}`;$('tutBar').style.width=(i+1)/TUT.length*100+'%';$('tutT').textContent=s.t;$('tutB').innerHTML=s.b();
+  $('tutP').textContent='';$('tutP').className='';show('tutP',!tut.frz);
+  $('tutNext').textContent=s.final?'自由練習':tut.info?'下一步':'略過這一步';$('tutNext').className=tut.frz?'pri':'';
+  $('tutSkip').textContent=s.final?'回主選單':'跳過教學';
+  tutHi(s.hi?s.hi():[]);show('tut',true)}
+function tutTick(dt){const s=TUT[tut.i];if(!s||tut.frz||!s.run)return;
+  if(tut.okT>0){tut.okT-=dt;if(tut.okT<=0)tutGo(tut.i+1);return}
+  const r=s.run(player,dt,tut.st),el=$('tutP');
+  if(r[0]){el.textContent='✓ 完成';el.className='ok';tut.okT=1.1}else if(el.textContent!==r[1])el.textContent=r[1]}
+function tutNext(){if(!tut)return;if(TUT[tut.i].final)tutFree();else tutGo(tut.i+1)}
+// leave the guided part but stay on track; options are restored when the session is cleared
+function tutFree(){tutExit();tut=null;show('tut',false);tutHi([]);if(player)player.laps=-1;show('tower',true);radio('自由練習。按暫停可以回到主選單','free',1)}
+function tutEnd(){tutExit();tut=null;show('tut',false);tutHi([]);if(tutSave){Object.assign(opts,tutSave);tutSave=null}}
+function startTutorial(){tutAskClose();tutExit();
+  if(!tutSave)tutSave={track:opts.track,mode:opts.mode,ttStart:opts.ttStart};
+  opts.track=0;opts.mode='tt';opts.ttStart='pit';
+  tut={i:-1,st:{},frz:true,okT:0};
+  startRace();show('tower',false);$('radio').classList.remove('on');
+  tutPlace(-30);player.laps=-1;tutGo(0)}
+$('tutNext').onclick=e=>{e.currentTarget.blur();tutNext()};
+$('tutSkip').onclick=e=>{e.currentTarget.blur();toTeams()};
+$('openTut').onclick=startTutorial;$('tutYes').onclick=startTutorial;
+function tutAskClose(){if($('tutNever').checked)ls.set('grid26.tutNoAsk','1');show('tutAsk',false)}
+$('tutNo').onclick=tutAskClose;
