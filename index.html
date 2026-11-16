@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Grid 2026 方程式賽車</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="gl" aria-label="3D 賽道畫面"></canvas>
+
+<div class="hud box" id="tower" hidden><div class="hdr"><span id="pos">P8</span><span>LAP <span id="tLap">1</span> / <span id="tTot">3</span></span></div><div id="rows"></div></div>
+<div class="hud box" id="lap" hidden>
+  <div class="big" id="lapNow">0:00.000</div>
+  <div class="kv">上一圈 <b id="lastLap">—</b></div>
+  <div class="kv">個人最快 <b id="bestLap">—</b></div>
+  <div class="kv">全場最快 <b id="fastLap">—</b></div>
+  <div class="sectors"><div class="sec idle" id="s1">S1</div><div class="sec idle" id="s2">S2</div><div class="sec idle" id="s3">S3</div></div>
+  <button id="pauseBtn" type="button">暫停 · 設定</button>
+</div>
+<div class="hud box" id="radio"><span class="tag">RADIO</span><span id="radioT"></span></div>
+<div class="hud box" id="toast"></div>
+<div class="hud" id="cluster" hidden>
+  <div class="gside">
+    <span class="chip" id="mX">X-MODE</span>
+    <span class="chip ot" id="mOT">OVERTAKE</span>
+    <span class="chip info" id="mERS">ERS 100%</span>
+    <span class="chip info" id="mDep" aria-label="電能模式"><i>無</i><i>中</i><i>快</i><i>超</i></span>
+  </div>
+  <div class="pedbars" aria-hidden="true"><div class="pb br"><i id="brkB"></i></div><div class="pb"><i id="thrB"></i></div></div>
+  <div class="gwrap">
+    <svg id="gauge" viewBox="0 0 220 220" aria-hidden="true">
+      <circle cx="110" cy="110" r="107" fill="rgba(11,16,22,.82)" stroke="#26313d"/>
+      <g id="ticks"></g>
+      <circle cx="110" cy="110" r="94" fill="none" stroke="#1c2530" stroke-width="9" stroke-dasharray="443 600" transform="rotate(135 110 110)"/>
+      <circle id="revFg" cx="110" cy="110" r="94" fill="none" stroke="#e8edf3" stroke-width="9" stroke-dasharray="0 600" transform="rotate(135 110 110)"/>
+      <circle cx="110" cy="110" r="82" fill="none" stroke="#1c2530" stroke-width="4" stroke-dasharray="386.4 600" transform="rotate(135 110 110)"/>
+      <circle id="launchArc" cx="110" cy="110" r="102" fill="none" stroke="#35d873" stroke-width="4" stroke-dasharray="0 2000" transform="rotate(135 110 110)" visibility="hidden"/>
+      <circle id="socArc" cx="110" cy="110" r="82" fill="none" stroke="#ffd23f" stroke-width="4" stroke-dasharray="386.4 600" transform="rotate(135 110 110)"/>
+    </svg>
+    <div class="gcenter"><div id="gearMode">AUTO</div><div id="gear">1</div><div id="spd">0</div><div class="u">KPH</div><div id="rpm">4000 RPM</div></div>
+  </div>
+</div>
+<div class="hud box" id="mini" hidden><canvas id="miniC" width="340" height="300"></canvas></div>
+<div class="hud box" id="startl" hidden><i></i><i></i><i></i><i></i><i></i></div>
+<div class="hud box" id="launchTip" hidden></div>
+<div class="hud box" id="tyreHud" hidden aria-label="輪胎狀態"><div><b id="tyC">M</b><span id="tyT"></span></div><div class="tyg"><i id="ty0"></i><i id="ty1"></i><i id="ty2"></i><i id="ty3"></i></div></div>
+
+<div class="hud box" id="tut" hidden>
+  <div class="th"><span>新手教學 · 約 3 分鐘</span><span id="tutN">步驟 1 / 13</span></div>
+  <div class="tbar"><i id="tutBar"></i></div>
+  <h4 id="tutT"></h4>
+  <p id="tutB"></p>
+  <div id="tutP" role="status"></div>
+  <div class="tact"><button id="tutNext" type="button">下一步</button><button id="tutSkip" type="button">跳過教學</button></div>
+</div>
+<div id="touch" hidden>
+  <div class="tc" id="tWheel" aria-label="方向盤"><svg id="wheelDz" viewBox="0 0 200 200" aria-hidden="true" style="position:absolute;inset:0"><path id="dzArc" fill="none" stroke="rgba(242,179,61,.5)" stroke-width="5" stroke-linecap="round"/></svg><div id="wheelBtns" hidden><b>◀</b><b>▶</b></div><svg id="wheelSvg" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(232,237,243,.28)" stroke-width="2" stroke-dasharray="3 9"/>
+    <path d="M30 78 Q30 52 56 52 L144 52 Q170 52 170 78 L170 132 Q170 150 152 150 L138 150 Q128 150 126 138 L124 126 L76 126 L74 138 Q72 150 62 150 L48 150 Q30 150 30 132 Z" fill="rgba(26,35,48,.94)" stroke="rgba(232,237,243,.6)" stroke-width="2"/>
+    <rect x="74" y="66" width="52" height="34" rx="4" fill="#0b1016" stroke="#3a4757"/>
+    <rect x="94" y="45" width="12" height="11" rx="2" fill="#f2b33d"/>
+    <circle cx="50" cy="76" r="5" fill="#35d873"/><circle cx="150" cy="76" r="5" fill="#ff4141"/><circle cx="62" cy="92" r="4" fill="#8794a3"/><circle cx="138" cy="92" r="4" fill="#8794a3"/>
+    <rect x="34" y="102" width="14" height="42" rx="6" fill="rgba(232,237,243,.2)"/><rect x="152" y="102" width="14" height="42" rx="6" fill="rgba(232,237,243,.2)"/>
+  </svg></div>
+  <div class="tc pedal" id="tBrake" aria-label="煞車踏板"><div class="fill"></div><span>煞車</span></div>
+  <div class="tc pedal" id="tThr" aria-label="油門踏板"><div class="fill"></div><span>油門</span></div>
+  <div class="tc" id="tUp" aria-label="升檔">▲ 升</div>
+  <div class="tc" id="tDn" aria-label="降檔">▼ 降</div>
+  <div class="tc" id="tX">X</div>
+  <div class="tc" id="tOT">OT</div>
+  <div class="tc" id="tMode" aria-label="電能模式"><b data-m="3">超</b><b data-m="2">快</b><b data-m="1">中</b><b data-m="0">無</b></div>
+  <div class="tc" id="tClutch" aria-label="離合器" hidden>離合器</div>
+  <div class="tc" id="tCam">視角</div>
+</div>
+<div class="box" id="touchBar" hidden>
+  <div><b>調整觸控配置</b> · 拖曳任一按鈕到順手的位置；點選後可用下方滑桿調整大小。</div>
+  <div class="szrow"><span id="tbSel">尚未選取按鈕</span><input type="range" id="tbSize" min="0.6" max="1.8" step="0.05" value="1" aria-label="按鈕大小"></div>
+  <div class="row2"><button class="mini-btn" id="tbReset" type="button">恢復預設配置</button><button class="mini-btn" id="tbDone" type="button">完成</button></div>
+</div>
+
+<!-- TEAM SELECT -->
+<div id="verTag" class="ver" style="position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(3px + env(safe-area-inset-bottom,0px));font:600 11px var(--f-mono);letter-spacing:.08em;color:#c9d1da;background:rgba(11,16,22,.72);padding:1px 8px;border-radius:3px;pointer-events:none"></div>
+<div class="ov" id="menu">
+  <div class="sheet">
+    <div>
+      <div class="topbar"><div class="eyebrow">步驟 1 / 2 · 選擇車隊</div><span style="display:flex;gap:8px"><button class="mini-btn" id="openTut" type="button">新手教學</button><button class="mini-btn" id="openSet1" type="button">設定</button></span></div>
+      <h1>GRID <span>2026</span></h1>
+      <p class="lede">車體依 2026 年技術規則建模：軸距 3.4 公尺、車寬 1.9 公尺、最低重量 768 公斤，前後翼可在彎道與直道模式間切換。五支車隊的性能分布，依今年車隊積分榜前五名換算。</p>
+      <div class="teams" id="teams"></div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3 id="selName">車隊</h3>
+        <div id="stats"></div>
+        <p class="note" id="selNote" style="margin-top:8px"></p>
+      </div>
+      <div class="card">
+        <h3>目前車輛調校</h3>
+        <div class="spec" id="setupSum"></div>
+        <p class="note" style="margin-top:8px">在「設定 → 車輛調校」修改下壓力、齒比、煞車平衡與 ERS 模式。</p>
+      </div>
+      <button class="btn" id="toTracks" type="button">下一步 · 選擇賽道</button>
+      <p class="note">車隊名稱與塗裝為原創設計，不使用真實車隊商標。</p>
+      <p class="note ver" style="margin-top:6px;font-family:var(--f-mono);letter-spacing:.06em"></p>
+    </div>
+  </div>
+</div>
+
+<!-- TRACK SELECT -->
+<div class="ov" id="trackScreen" hidden>
+  <div class="sheet">
+    <div>
+      <div class="topbar"><div class="eyebrow">步驟 2 / 2 · 選擇賽道</div><button class="mini-btn" id="openSet2" type="button">設定</button></div>
+      <h2>賽道 · 依難度排列</h2>
+      <p class="lede" style="margin-bottom:12px">賽道線形取自真實 F1 賽道的地理資料，高低差取自 2025 年正賽的賽車定位遙測，起跑線也在真實位置。</p>
+      <div class="trks" id="trks"></div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <canvas id="trkBig" width="640" height="400"></canvas>
+        <div class="rank" id="tdRank"></div>
+        <h2 id="tdName" style="margin-top:2px">—</h2>
+        <div class="tm" id="tdRef"></div>
+        <p class="note" id="tdDesc" style="margin:10px 0"></p>
+        <div class="spec" id="tdSpec"></div>
+        <div class="optl">模式</div>
+        <div class="seg" id="optMode"><button type="button" id="m-race" data-v="race" aria-pressed="true">正賽</button><button type="button" id="m-tt" data-v="tt" aria-pressed="false">計時賽</button></div>
+        <div id="ttOpts" hidden>
+          <div class="optl">出發方式</div>
+          <div class="seg" id="optTT"><button type="button" id="tt-pit" data-v="pit" aria-pressed="true">從維修區出發</button><button type="button" id="tt-fly" data-v="fly" aria-pressed="false">跳過暖胎圈</button></div>
+          <p class="note" id="ttNote" style="margin-top:6px"></p>
+          <button class="btn ghost" id="lbOpen1" type="button" style="margin-top:8px;width:100%">這條賽道的排行榜</button>
+        </div>
+        <div id="raceOpts">
+        <div class="optl">圈數 <b id="raceKm"></b></div>
+        <div class="seg" id="optLaps"><button type="button" id="lap3" data-v="3" aria-pressed="true">3 圈</button><button type="button" id="lap5" data-v="5" aria-pressed="false">5 圈</button><button type="button" id="lap8" data-v="8" aria-pressed="false">8 圈</button></div>
+        <div class="optl">對手強度</div>
+        <div class="seg" id="optDiff"><button type="button" id="d0" data-v="0.88" aria-pressed="false">新手</button><button type="button" id="d1" data-v="0.92" aria-pressed="false">簡單</button><button type="button" id="d2" data-v="0.95" aria-pressed="false">普通</button><button type="button" id="d3" data-v="0.975" aria-pressed="false">標準</button><button type="button" id="d4" data-v="0.99" aria-pressed="false">困難</button><button type="button" id="d5" data-v="1.005" aria-pressed="false">專家</button><button type="button" id="d6" data-v="1.02" aria-pressed="false">傳奇</button></div>
+        <p class="note" id="diffNote" style="margin-top:6px"></p>
+        </div>
+        <div class="optl">起跑輪胎</div>
+        <div class="seg" id="optTyre"><button type="button" data-v="S">軟胎</button><button type="button" data-v="M">中性胎</button><button type="button" data-v="H">硬胎</button></div>
+        <p class="note" id="tyreNote" style="margin-top:6px"></p>
+      </div>
+      <div class="row2"><button class="btn ghost" id="backTeams" type="button">換車隊</button><button class="btn" id="go" type="button">上場</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ov dim" id="pause" hidden>
+  <div class="res card">
+    <div class="eyebrow">暫停</div>
+    <h2>PIT WALL</h2>
+    <div style="display:grid;gap:10px;margin-top:12px">
+      <button class="btn" id="resume" type="button">繼續比賽</button>
+      <div class="row2"><button class="btn ghost" id="openSet3" type="button">設定</button><button class="btn ghost" id="restart" type="button">重新開始</button></div>
+      <div id="tyreSw" style="display:grid;gap:6px"><span class="note" id="tyreSwL" style="margin:0"></span><div class="seg" id="pauseTyre"><button type="button" data-v="S">軟胎</button><button type="button" data-v="M">中性胎</button><button type="button" data-v="H">硬胎</button></div></div>
+      <button class="btn ghost" id="lbOpen2" type="button" hidden>排行榜</button>
+      <div id="ttSwitch" hidden style="display:grid;gap:6px"><label for="ttSel" class="note" style="margin:0">切換賽道（計時賽）· 車隊與設定都保留</label><select id="ttSel" style="width:100%;padding:12px;border-radius:8px;background:var(--raise);color:var(--ink);border:1px solid #3a4757;font:600 15px var(--f-body)"></select></div>
+      <button class="btn ghost" id="quit" type="button">回到選單</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov dim" id="lb" hidden>
+  <div class="res card" style="max-width:640px;width:100%">
+    <div class="eyebrow">計時賽排行榜</div>
+    <h2 id="lbTitle"></h2>
+    <div class="lbwrap"><table><thead><tr><th>#</th><th>單圈</th><th>S1 / S2 / S3</th><th>車隊</th><th>輪胎</th></tr></thead><tbody id="lbBody"></tbody></table></div>
+    <p class="note" id="lbNote" style="margin-top:10px"></p>
+    <button class="btn" id="lbClose" type="button" style="margin-top:12px;width:100%">關閉</button>
+  </div>
+</div>
+
+<div class="ov dim" id="results" hidden>
+  <div class="res card">
+    <div class="eyebrow" id="resTrack">正式成績</div>
+    <h2 id="resTitle">P1</h2>
+    <div class="tblwrap"><table><thead><tr><th>名次</th><th>車手</th><th>車隊</th><th class="r">時間 / 差距</th><th class="r">最快圈</th></tr></thead><tbody id="resBody"></tbody></table></div>
+    <div class="row2"><button class="btn" id="again" type="button">再跑一場</button><button class="btn ghost" id="toTrackSel" type="button">換賽道</button></div>
+  </div>
+</div>
+
+<div class="ov dim" id="tutAsk" hidden>
+  <div class="res card">
+    <div class="eyebrow">第一次上場？</div>
+    <h2>要跑新手教學嗎？</h2>
+    <p class="lede" style="margin:0">大約 3 分鐘，在練習賽道上一步一步帶你操作，場上只有你一台車。</p>
+    <ul><li>油門、煞車、轉向、換檔與視角</li><li>看懂儀表：轉速、檔位、電池電量</li><li>2026 規則：直道模式、電能部署、Overtake</li><li>起跑、賽道界線與維修區</li></ul>
+    <div style="display:grid;gap:10px;margin-top:16px">
+      <button class="btn" id="tutYes" type="button">開始教學</button>
+      <button class="btn ghost" id="tutNo" type="button">不用，直接選車</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13.5px;color:var(--dim);cursor:pointer"><input type="checkbox" id="tutNever" style="width:18px;height:18px;accent-color:var(--signal)">下次不再詢問</label>
+    <p class="note" style="margin-top:8px">之後想看，主選單右上角有「新手教學」。<span class="ver" style="float:right;font-family:var(--f-mono)"></span></p>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="ov dim" id="settings" hidden>
+  <div class="set card">
+    <div class="topbar"><div class="eyebrow">設定 <span id="setStat" style="margin-left:10px;font-family:var(--f-mono);letter-spacing:0;color:var(--dim)"></span></div><button class="mini-btn" id="closeSet" type="button">完成</button></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-keys" aria-selected="true" type="button">按鍵操作</button>
+      <button class="tab" role="tab" id="tab-assist" aria-selected="false" type="button">駕駛與觸控</button>
+      <button class="tab" role="tab" id="tab-setup" aria-selected="false" type="button">車輛調校</button>
+      <button class="tab" role="tab" id="tab-aids" aria-selected="false" type="button">輔助與起跑</button>
+    </div>
+    <div id="pane-keys" role="tabpanel"></div>
+    <div id="pane-assist" role="tabpanel" hidden></div>
+    <div id="pane-setup" role="tabpanel" hidden></div>
+    <div id="pane-aids" role="tabpanel" hidden></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/data/tracks.js"></script>
+<script src="js/core.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/track-scene.js"></script>
+<script src="js/car-model.js"></script>
+<script src="js/state.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/input.js"></script>
+<script src="js/graphics.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
