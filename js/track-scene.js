@@ -10,13 +10,22 @@ const THEMES={
 };
 let trackGroup=null,gantryLamps=[],miniPath=null,miniZones=null;
 function disposeGroup(g){g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&![texKerb,texCheck,texSeat,...KEEP_TEX].includes(m.map))m.map.dispose();m.dispose()})}})}
+// track surfaces are built with RIB_SUB rows per track sample; every surface (road, kerbs, run-off, gravel)
+// goes through the same interpolation, so neighbouring strips share identical edge heights
+const RIB_SUB=2;
+const crY=(i,t)=>{const a=PY[(i-1+N)%N],b=PY[i],c=PY[(i+1)%N],d=PY[(i+2)%N];return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t)};
 function ribbon(f0,f1,yo,uLen,filter,vs,cols){cols=cols||1;const pos=[],uv=[],idx=[],W=cols+1;let v=0,run=-1;
-  for(let c=0;c<=N;c++){const i=c%N;const on=!filter||filter(i);if(on){if(run<0)run=v;const d0=f0(i),d1=f1(i),y=PY[i]+yo,u=c*DS/uLen;
-    for(let q=0;q<=cols;q++){const d=d0+(d1-d0)*q/cols;pos.push(PX[i]+NX[i]*d,y,PZ[i]+NZ[i]*d);uv.push(u,vs?d/vs:q/cols)}
+  for(let c=0;c<=N*RIB_SUB;c++){const i=Math.floor(c/RIB_SUB)%N,t=(c%RIB_SUB)/RIB_SUB,j=(i+1)%N;const on=!filter||(filter(i)&&(t===0||filter(j)));
+    if(on){if(run<0)run=v;const d0=t?lerp(f0(i),f0(j),t):f0(i),d1=t?lerp(f1(i),f1(j),t):f1(i),y=(t?crY(i,t):PY[i])+yo,u=c*DS/RIB_SUB/uLen;
+    let px=PX[i],pz=PZ[i],nx=NX[i],nz=NZ[i];if(t){px=lerp(PX[i],PX[j],t);pz=lerp(PZ[i],PZ[j],t);nx=lerp(NX[i],NX[j],t);nz=lerp(NZ[i],NZ[j],t);const l=Math.hypot(nx,nz)||1;nx/=l;nz/=l}
+    for(let q=0;q<=cols;q++){const d=d0+(d1-d0)*q/cols;pos.push(px+nx*d,y,pz+nz*d);uv.push(u,vs?d/vs:q/cols)}
     v+=W;if(v-run>=2*W){const p=v-2*W;for(let q=0;q<cols;q++){const a=p+q,b=p+W+q;idx.push(a,b,a+1,a+1,b,b+1)}}}else run=-1}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
 function wallGeo(side){const pos=[],idx=[];for(let c=0;c<=N;c++){const i=c%N;const TG=side>0?TGL:TGR,d=TG[i]?side*(HW+2):(side>0?WL[i]:-WR[i])+side*0.5;const x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;const bot=PY[i]-(BR[i]?0.8:25);pos.push(x,bot,z,x,PY[i]+1.1,z);if(c>0&&!TG[i]&&!TG[(i-1+N)%N]){const v=c*2;idx.push(v-2,v,v-1,v-1,v,v+1)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g}
-function signSpot(s0,side){const i=Math.floor(wrapS(s0)/DS)%N,r=pitRel(s0),pit=side===PIT.side&&(r<PIT.len+15||r>TL-15);return pit?{off:PIT.PW,lift:1.6}:{off:(side>0?WL[i]:WR[i])+0.55,lift:0}}
+function signSpot(s0,side){const i=Math.floor(wrapS(s0)/DS)%N,r=pitRel(s0),pit=side===PIT.side&&(r<PIT.len+15||r>TL-15);return pit?{off:PIT.PW,lift:1.6}:{off:(side>0?WL[i]:WR[i])+SIGN_BACK,lift:0}}
+// trackside signs stand this far behind the wall face (clear of the 0.35 m ad boards and their posts);
+// panels start SIGN_CLEAR above the ground, i.e. 0.3 m over the top of the 2.5 m advertising boards
+const SIGN_BACK=1.75,SIGN_CLEAR=2.8;
 function board(text,color){const t=canvasTex(256,128,(c,w,h)=>{c.fillStyle='#10161d';c.fillRect(0,0,w,h);c.fillStyle=color;c.font='800 74px "Saira Condensed",Arial Narrow,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(text,w/2,h/2+4)});return new THREE.Mesh(new THREE.PlaneGeometry(4,2),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}))}
 let rlMesh=null,rlCol=null,rlI0=0,rlN=0;
 const cloudTex=canvasTex(256,96,(c,w,h)=>{for(let k=0;k<9;k++){const x=30+Math.random()*(w-60),y=38+Math.random()*26,r=22+Math.random()*24,g=c.createRadialGradient(x,y,2,x,y,r);g.addColorStop(0,'rgba(255,255,255,.85)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,w,h)}});
@@ -107,8 +116,8 @@ function buildTrackScene(def){
   // straight-mode boards
   const postMat=new THREE.MeshLambertMaterial({color:0x2f3a46});
   ZONES.forEach(z=>{[[z.a,'X MODE','#f2b33d'],[z.b,'Z MODE','#e8edf3']].forEach(([s,txt,col])=>{[1,-1].forEach(side=>{const sp=signSpot(s,side),p=at(s,side*sp.off,{});
-    const b=board(txt,col);b.position.set(p.x,p.y+2.5+sp.lift,p.z);b.rotation.y=p.h+Math.PI+side*0.26;G.add(b);
-    const post=new THREE.Mesh(new THREE.BoxGeometry(0.15,1.5+sp.lift,0.15),postMat);post.position.set(p.x,p.y+(1.5+sp.lift)/2,p.z);G.add(post)})})});
+    const b=board(txt,col);b.position.set(p.x,p.y+SIGN_CLEAR+1+sp.lift,p.z);b.rotation.y=p.h+Math.PI+side*0.26;G.add(b);
+    const post=new THREE.Mesh(new THREE.BoxGeometry(0.15,SIGN_CLEAR+sp.lift,0.15),postMat);post.position.set(p.x,p.y+(SIGN_CLEAR+sp.lift)/2,p.z);G.add(post)})})});
   // overhead gantry: two posts off the racing surface, a beam and the sign above the lane
   const gantry=(s0,dA,dB,txt,col,hgt)=>{const a=at(s0,dA,{}),b=at(s0,dB,{}),y=Math.max(a.y,b.y)+hgt,len=Math.hypot(a.x-b.x,a.z-b.z);
     for(const q of [a,b]){const ps=new THREE.Mesh(new THREE.BoxGeometry(0.3,y-q.y+0.3,0.3),postMat);ps.position.set(q.x,(y+q.y)/2,q.z);G.add(ps)}
@@ -160,7 +169,7 @@ function buildTrackScene(def){
    const panel=new THREE.PlaneGeometry(1.6,1.2),post=new THREE.BoxGeometry(0.1,1,0.1);
    corners.forEach((ci,k)=>{const prev=corners[(k-1+corners.length)%corners.length],gap=corners.length>1?((ci-prev+N)%N)*DS:TL;const out=Math.sign(KS[(ci+8)%N])||1;
      for(const dist of [50,100,150,200]){if(dist>gap-40)break;const s0=ci*DS-dist,sp=signSpot(s0,out),k2=clamp(sp.off/9,1,1.9);
-       const p=at(s0,out*sp.off,{}),b=new THREE.Mesh(panel,signMat(dist));b.scale.set(k2,k2,1);b.position.set(p.x,p.y+1.7+0.6*k2+sp.lift,p.z);b.rotation.y=p.h+Math.PI+out*0.26;G.add(b);
-       const ph=1.7+sp.lift,ps=new THREE.Mesh(post,bmat);ps.scale.y=ph;ps.position.set(p.x,p.y+ph/2,p.z);G.add(ps)}})}
+       const p=at(s0,out*sp.off,{}),b=new THREE.Mesh(panel,signMat(dist));b.scale.set(k2,k2,1);b.position.set(p.x,p.y+SIGN_CLEAR+0.6*k2+sp.lift,p.z);b.rotation.y=p.h+Math.PI+out*0.26;G.add(b);
+       const ph=SIGN_CLEAR+sp.lift,ps=new THREE.Mesh(post,bmat);ps.scale.y=ph;ps.position.set(p.x,p.y+ph/2,p.z);G.add(ps)}})}
   scene.add(G);buildMiniPath();
 }
