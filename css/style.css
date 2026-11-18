@@ -263,3 +263,69 @@ body.touching #mini{bottom:auto;left:auto;top:calc(204px + env(safe-area-inset-t
 #tutAsk ul{margin:10px 0 0;padding-left:1.2em;color:var(--dim);font-size:13.5px;line-height:1.8}
 @media (max-width:640px){#tut{top:calc(176px + env(safe-area-inset-top,0px));left:12px;right:12px;width:auto}}
 @media (prefers-reduced-motion:reduce){#radio,#toast{transition:none}.tutHi{animation:none}#tut .tbar i{transition:none}}
+/* ================= phone landscape: compact layout =================
+   body.compact is set when the window is shorter than 520px or narrower than 932px.
+   Tablets and desktops never get this class, so their layout is untouched. Every edge offset
+   includes the safe-area insets, so the notch / Dynamic Island side and the home bar are avoided. */
+body.compact{--sl:max(8px,env(safe-area-inset-left,0px));--sr:max(8px,env(safe-area-inset-right,0px));--st:max(6px,env(safe-area-inset-top,0px));--sb:max(6px,env(safe-area-inset-bottom,0px));--wh:min(38vh,170px);--thrW:88px;--brkW:96px;--gapP:10px}
+/* top left: timing tower, top 3 + you, tap to show all 10 */
+body.compact #tower{top:var(--st);left:var(--sl);width:124px;padding:3px 0;font-size:9.5px;pointer-events:auto;cursor:pointer}
+body.compact #tower .hdr{font-size:9.5px;padding:0 7px 3px}
+body.compact #pos{font-size:15px}
+body.compact .trow{grid-template-columns:14px 3px 34px 1fr;gap:4px;height:12px;padding:0 7px}
+body.compact .trow .chip{height:9px}
+body.compact #tower.cut::after{content:'▾ 點擊展開全部';display:block;font:600 8px var(--f-body);color:var(--dim);text-align:center;padding-top:2px}
+/* tyre status and camera button next to the tower, clear of both thumbs */
+body.compact #tyreHud{top:var(--st);bottom:auto;left:calc(var(--sl) + 132px);transform:scale(.82);transform-origin:top left;padding:4px 5px}
+body.compact #touch > #tCam{top:var(--st);bottom:auto;right:auto;left:calc(var(--sl) + 226px);width:50px;height:30px;font-size:12px;border-radius:15px}
+/* top right: one compact timing row, then the map, then the ERS mode pill beside the map */
+body.compact #lap{top:var(--st);right:var(--sr);width:236px;padding:5px 8px;font-size:9.5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:4px;align-items:center}
+body.compact #lap .big{font-size:19px;grid-column:1;grid-row:1}
+body.compact #lap .sectors{grid-column:2;grid-row:1;margin:0;gap:3px}
+body.compact #lap .sec{height:17px;font-size:9px}
+body.compact #lap .kv{display:none;margin:0}
+body.compact #lap .kv:nth-child(3){display:flex;gap:6px;grid-column:1;grid-row:2}
+body.compact #pauseBtn{grid-column:2;grid-row:2;margin:0;padding:2px 4px;font-size:11px}
+body.compact #mini,body.compact.touching #mini{display:block;top:calc(var(--st) + 64px);bottom:auto;left:auto;right:var(--sr);width:96px;height:84px;pointer-events:auto;cursor:pointer}
+body.compact.miniOff #mini{width:46px;height:22px}
+body.compact.miniOff #mini canvas{display:none}
+body.compact.miniOff #mini::before{content:'MAP';display:flex;height:100%;align-items:center;justify-content:center;font:700 10px var(--f-display);letter-spacing:.12em;color:var(--dim)}
+body.compact #touch > #tMode{top:calc(var(--st) + 64px);bottom:auto;right:calc(var(--sr) + 104px);width:144px;height:32px;flex-direction:row;border-radius:16px}
+body.compact #tMode b{border-top:0;border-left:1px solid rgba(232,237,243,.16);font-size:13px}
+body.compact #tMode b:first-child{border-left:0}
+/* bottom centre: gauge scaled to 0.78 and pinned to the bottom edge */
+body.compact #cluster{transform:scale(.78)}
+body.compact.touching #cluster{top:auto;bottom:var(--sb);right:auto;left:50%;transform:translateX(-50%) scale(.78);transform-origin:bottom center}
+body.compact.touching #cluster .pedbars{margin-bottom:12px}
+@media (max-height:400px){body.compact.touching #cluster{transform:translateX(-50%) scale(.68)}}
+/* bottom left: steering square sized from the screen height; clutch sits above it */
+body.compact #touch > #tWheel{left:var(--sl);bottom:var(--sb);width:var(--wh);height:var(--wh)}
+body.compact #touch > #tClutch{left:var(--sl);bottom:calc(var(--sb) + var(--wh) + 10px);width:96px;height:48px}
+/* bottom right: throttle, brake, and X / OT above the brake with a 12px gap */
+body.compact #touch > .pedal{bottom:var(--sb)}
+body.compact #touch > #tThr{right:var(--sr);width:var(--thrW);height:50vh}
+body.compact #touch > #tBrake{right:calc(var(--sr) + var(--thrW) + var(--gapP));width:var(--brkW);height:40vh}
+body.compact #touch > #tX,body.compact #touch > #tOT{width:46px;height:44px;border-radius:22px;bottom:calc(var(--sb) + 40vh + 12px)}
+body.compact #touch > #tOT{right:calc(var(--sr) + var(--thrW) + var(--gapP))}
+body.compact #touch > #tX{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 50px)}
+/* manual shifting: up / down continue the X / OT row, so the bottom centre stays free for the gauge */
+body.compact #touch > #tUp,body.compact #touch > #tDn{width:52px;height:44px;border-radius:22px;bottom:calc(var(--sb) + 40vh + 12px)}
+body.compact #touch > #tDn{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 106px)}
+body.compact #touch > #tUp{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 162px)}
+body.compact .pedal::after{inset:-12px -6px}
+/* messages move out of the top bar */
+body.compact #startl{top:calc(var(--st) + 66px);transform:translateX(-50%) scale(.5);transform-origin:top center}
+body.compact #radio,body.compact #launchTip{top:calc(var(--st) + 112px);bottom:auto;max-width:min(50vw,400px);font-size:12px;padding:5px 10px}
+body.compact #radio{white-space:normal}
+/* menus, leaderboard, pause and settings scroll inside the short screen */
+body.compact .ov{padding:var(--st) var(--sr) var(--sb) var(--sl);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+body.compact .sheet{gap:14px;margin:0}
+body.compact .set,body.compact .res{margin:0}
+body.compact h1{font-size:40px;margin:4px 0 6px}
+body.compact h2{font-size:30px}
+body.compact .lede{font-size:12.5px;margin-bottom:10px}
+body.compact .trks{max-height:none}
+body.compact .tabs{margin:6px 0 8px;position:sticky;top:calc(-1 * var(--st));background:var(--night);z-index:1}
+body.compact input[type=range]{height:32px;touch-action:pan-x}
+body.compact #tut{top:auto;bottom:calc(var(--sb) + var(--wh) + 66px);left:var(--sl);width:min(400px,calc(100vw - 260px));font-size:12px;padding:8px 10px}
+body.compact #tut h4{font-size:17px}

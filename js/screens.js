@@ -97,8 +97,8 @@ function showLB(){const t=TRACKS[opts.track],own=lbLoad(t.id),rows=own.concat(lb
   $('lbNote').textContent=own.length?'亮色是你的成績（最多保留 5 筆），灰色是基準成績。':'還沒有你的成績。灰色是依這條賽道算出來的基準成績，跑一圈計時賽就會上榜。';show('lb',true)}
 $('lbOpen1').onclick=showLB;$('lbOpen2').onclick=showLB;$('lbClose').onclick=()=>show('lb',false);
 // settings code: everything in grid26.settings (assists, car setup, keys, touch layout) as one string
-const cfgCode=()=>'G26.'+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,assist:settings.assist,setup:settings.setup,keys:settings.keys,touchLayout:settings.touchLayout||null}))));
-function cfgApply(txt){try{const o=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim().replace(/^G26\./,'')))));if(!o||typeof o!=='object'||!o.assist)throw 0;ls.set('grid26.settings',JSON.stringify({assist:o.assist,setup:o.setup||{},keys:o.keys||{},touchLayout:o.touchLayout||undefined}));return true}catch(e){return false}}
+const cfgCode=()=>'G26.'+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,assist:settings.assist,setup:settings.setup,keys:settings.keys,touchLayout:settings.touchLayout||null,touchLayoutM:settings.touchLayoutM||null}))));
+function cfgApply(txt){try{const o=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim().replace(/^G26\./,'')))));if(!o||typeof o!=='object'||!o.assist)throw 0;ls.set('grid26.settings',JSON.stringify({assist:o.assist,setup:o.setup||{},keys:o.keys||{},touchLayout:o.touchLayout||undefined,touchLayoutM:o.touchLayoutM||undefined}));return true}catch(e){return false}}
 function ttSwitchRender(){renderTyrePick();const on=opts.mode==='tt'&&!tut;$('ttSwitch').hidden=!on;$('ttSwitch').style.display=on?'grid':'none';if(!on)return;
   $('ttSel').innerHTML=TRACKS.map((t,i)=>`<option value="${i}"${i===opts.track?' selected':''}>${i===opts.track?'▶ ':''}${t.zh} ${t.name} · 難度 ${t.diff}/5</option>`).join('')}
 $('ttSel').onchange=e=>{const i=+e.target.value;if(i===opts.track||!(i>=0))return;opts.track=i;paused=false;screen(null);toast('載入 '+TRACKS[i].zh+'…');setTimeout(startRace,30)};

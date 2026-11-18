@@ -22,25 +22,31 @@ addEventListener('blur',()=>{Object.assign(input,{thrK:0,brkK:0,left:0,right:0,o
 const TC=['tWheel','tBrake','tThr','tUp','tDn','tX','tOT','tMode','tClutch','tCam'],TC_NAME={tClutch:'離合器（起跑）',tMode:'電能模式',tERSp:'電能微調 +',tERSm:'電能微調 −',tCam:'切換視角',tWheel:'方向盤',tBrake:'煞車踏板',tThr:'油門踏板',tUp:'升檔',tDn:'降檔',tX:'直道模式',tOT:'Overtake',cluster:'儀表板',mini:'賽道地圖',tyreHud:'輪胎狀態'};
 // HUD panels that can be moved too; their saved spot only applies while the touch controls are in use
 const TC_HUD=['cluster','mini','tyreHud'],TC_ALL=TC.concat(TC_HUD);
-let touchEdit=false,tcSel=null,hudWasHidden=null;
-function applyTouchLayout(){const L=settings.touchLayout||{};TC.forEach(id=>{const el=$(id),l=L[id];if(l&&el.offsetWidth){el.style.left=(l.cx*innerWidth-el.offsetWidth/2)+'px';el.style.top=(l.cy*innerHeight-el.offsetHeight/2)+'px';el.style.right='auto';el.style.bottom='auto';el.style.transform=`scale(${l.s||1})`}else if(!l){el.style.left=el.style.top=el.style.right=el.style.bottom=el.style.transform=''}});applyHudLayout()}
+// phones (short or narrow landscape screens) get their own compact defaults and their own saved layout,
+// so moving a button on a phone never disturbs the layout tuned on a tablet, and the other way round
+const isCompact=()=>innerHeight<520||innerWidth<932;
+const tlKey=()=>document.body.classList.contains('compact')?'touchLayoutM':'touchLayout';
+const TLay=()=>settings[tlKey()]||(settings[tlKey()]={});
+function updCompact(){const c=isCompact(),b=document.body.classList;if(b.contains('compact')!==c){b.toggle('compact',c);if(touchEdit)tcSelect(null)}}
+let touchEdit=false,tcSel=null,hudWasHidden=null;updCompact();
+function applyTouchLayout(){const L=TLay();TC.forEach(id=>{const el=$(id),l=L[id];if(l&&el.offsetWidth){el.style.left=(l.cx*innerWidth-el.offsetWidth/2)+'px';el.style.top=(l.cy*innerHeight-el.offsetHeight/2)+'px';el.style.right='auto';el.style.bottom='auto';el.style.transform=`scale(${l.s||1})`}else if(!l){el.style.left=el.style.top=el.style.right=el.style.bottom=el.style.transform=''}});applyHudLayout()}
 // positioned by their centre in viewport units, so a panel that is still hidden lands in the right place once shown
-function applyHudLayout(){const L=settings.touchLayout||{},act=touchEdit||document.body.classList.contains('touching');TC_HUD.forEach(id=>{const el=$(id),l=L[id],st=el.style;
+function applyHudLayout(){const L=TLay(),act=touchEdit||document.body.classList.contains('touching');TC_HUD.forEach(id=>{const el=$(id),l=L[id],st=el.style;
   if(act&&l){st.left=(l.cx*100).toFixed(3)+'vw';st.top=(l.cy*100).toFixed(3)+'vh';st.right=st.bottom='auto';st.transformOrigin='50% 50%';st.transform=`translate(-50%,-50%) scale(${l.s||1})`}
   else st.left=st.top=st.right=st.bottom=st.transform=st.transformOrigin=''})}
-function applyTouchVisibility(){const t=settings.assist.touch;const want=t==='on'||(t==='auto'&&matchMedia('(pointer:coarse)').matches);const on=touchEdit||(want&&state==='race'&&!!player);show('touch',on);document.body.classList.toggle('touching',on);document.body.classList.toggle('tcEdit',touchEdit);const man=settings.assist.gearbox==='manual'||touchEdit;show('tUp',man);show('tDn',man);if(touchEdit)show('tClutch',true);$('touch').classList.toggle('edit',touchEdit);show('touchBar',touchEdit);if(on)applyTouchLayout();else applyHudLayout()}
-function tcSelect(id){tcSel=id;TC_ALL.forEach(k=>$(k).classList.toggle('sel',k===id));const l=id&&settings.touchLayout[id];$('tbSel').textContent=id?TC_NAME[id]+' 大小':'尚未選取項目';$('tbSize').value=l?l.s||1:1;$('tbSize').disabled=!id;$('tbVal').textContent=l?Math.round((l.s||1)*100)+'%':'—'}
+function applyTouchVisibility(){updCompact();const t=settings.assist.touch;const want=t==='on'||(t==='auto'&&matchMedia('(pointer:coarse)').matches);const on=touchEdit||(want&&state==='race'&&!!player);show('touch',on);document.body.classList.toggle('touching',on);document.body.classList.toggle('tcEdit',touchEdit);const man=settings.assist.gearbox==='manual'||touchEdit;show('tUp',man);show('tDn',man);if(touchEdit)show('tClutch',true);$('touch').classList.toggle('edit',touchEdit);show('touchBar',touchEdit);if(on)applyTouchLayout();else applyHudLayout()}
+function tcSelect(id){tcSel=id;TC_ALL.forEach(k=>$(k).classList.toggle('sel',k===id));const l=id&&TLay()[id];$('tbSel').textContent=id?TC_NAME[id]+' 大小':'尚未選取項目';$('tbProf').textContent=tlKey()==='touchLayoutM'?'手機配置':'平板／電腦配置';$('tbSize').value=l?l.s||1:1;$('tbSize').disabled=!id;$('tbVal').textContent=l?Math.round((l.s||1)*100)+'%':'—'}
 function openTouchEdit(){capture=null;show('settings',false);touchEdit=true;TC_ALL.forEach(k=>$(k).classList.remove('on'));hudWasHidden=TC_HUD.map(k=>$(k).hidden);TC_HUD.forEach(k=>show(k,true));tcSelect(null);applyTouchVisibility()}
 $('tbDone').onclick=()=>{touchEdit=false;tcSelect(null);if(hudWasHidden)TC_HUD.forEach((k,n)=>show(k,!hudWasHidden[n]));hudWasHidden=null;show('tClutch',false);saveSettings();show('settings',true);renderSettings()};
-$('tbReset').onclick=()=>{settings.touchLayout={};tcSelect(null);applyTouchLayout()};
-const tcSize=v=>{if(!tcSel)return;const l=settings.touchLayout[tcSel];if(!l)return;l.s=clamp(Math.round(v*100)/100,0.5,1.8);$('tbSize').value=l.s;$('tbVal').textContent=Math.round(l.s*100)+'%';applyTouchLayout()};
+$('tbReset').onclick=()=>{settings[tlKey()]={};tcSelect(null);applyTouchLayout()};
+const tcSize=v=>{if(!tcSel)return;const l=TLay()[tcSel];if(!l)return;l.s=clamp(Math.round(v*100)/100,0.5,1.8);$('tbSize').value=l.s;$('tbVal').textContent=Math.round(l.s*100)+'%';applyTouchLayout()};
 $('tbSize').addEventListener('input',e=>tcSize(+e.target.value));
 $('tbMinus').onclick=()=>tcSize(+$('tbSize').value-0.05);$('tbPlus').onclick=()=>tcSize(+$('tbSize').value+0.05);
 TC_ALL.forEach(id=>{const el=$(id);let grab=null;
-  el.addEventListener('pointerdown',e=>{if(!touchEdit)return;e.preventDefault();e.stopPropagation();const r=el.getBoundingClientRect(),old=settings.touchLayout[id];
-    const l=settings.touchLayout[id]={cx:(r.left+r.width/2)/innerWidth,cy:(r.top+r.height/2)/innerHeight,s:old?old.s||1:Math.round(r.width/(el.offsetWidth||r.width)*100)/100};
+  el.addEventListener('pointerdown',e=>{if(!touchEdit)return;e.preventDefault();e.stopPropagation();const r=el.getBoundingClientRect(),old=TLay()[id];
+    const l=TLay()[id]={cx:(r.left+r.width/2)/innerWidth,cy:(r.top+r.height/2)/innerHeight,s:old?old.s||1:Math.round(r.width/(el.offsetWidth||r.width)*100)/100};
     grab={dx:e.clientX-l.cx*innerWidth,dy:e.clientY-l.cy*innerHeight};tcSelect(id);try{el.setPointerCapture(e.pointerId)}catch(_){}applyTouchLayout()});
-  el.addEventListener('pointermove',e=>{if(!touchEdit||!grab)return;const l=settings.touchLayout[id];l.cx=clamp((e.clientX-grab.dx)/innerWidth,0.04,0.96);l.cy=clamp((e.clientY-grab.dy)/innerHeight,0.05,0.96);applyTouchLayout()});
+  el.addEventListener('pointermove',e=>{if(!touchEdit||!grab)return;const l=TLay()[id];l.cx=clamp((e.clientX-grab.dx)/innerWidth,0.04,0.96);l.cy=clamp((e.clientY-grab.dy)/innerHeight,0.05,0.96);applyTouchLayout()});
   const end=()=>{grab=null};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)});
 const padEnders=[];
 // each control follows exactly one pointer id; any way that finger can go away releases it
