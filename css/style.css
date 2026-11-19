@@ -327,5 +327,28 @@ body.compact .lede{font-size:12.5px;margin-bottom:10px}
 body.compact .trks{max-height:none}
 body.compact .tabs{margin:6px 0 8px;position:sticky;top:calc(-1 * var(--st));background:var(--night);z-index:1}
 body.compact input[type=range]{height:32px;touch-action:pan-x}
-body.compact #tut{top:auto;bottom:calc(var(--sb) + var(--wh) + 66px);left:var(--sl);width:min(400px,calc(100vw - 260px));font-size:12px;padding:8px 10px}
-body.compact #tut h4{font-size:17px}
+/* tutorial card: top left, never taller than the space above the steering square; scrolls inside if needed */
+body.compact #tut{top:var(--st);bottom:auto;left:var(--sl);width:min(420px,58vw);max-height:calc(100vh - var(--st) - var(--sb) - var(--wh) - 14px);overflow-y:auto;font-size:12px;line-height:1.5;padding:7px 10px;z-index:45}
+body.compact #tut h4{font-size:16px;margin-bottom:3px}
+body.compact #tut .tbar{margin:4px 0 6px}
+body.compact #tut .tact{margin-top:6px}
+body.compact #tut button{padding:4px 10px}
+/* very short windows (phone in Safari with the toolbars showing, ≤ 340px tall):
+   the map moves into the top row, the ERS pill sits under the timer, X / OT and the shift buttons
+   become columns to the left of the brake, and the gauge shifts left so nothing meets */
+@media (max-height:340px){
+  body.compact{--wh:min(40vh,140px);--thrW:80px;--brkW:80px;--gapP:8px}
+  body.compact #mini,body.compact.touching #mini{top:var(--st);right:calc(var(--sr) + 262px);width:84px;height:56px}
+  body.compact #touch > #tMode{top:calc(var(--st) + 60px);right:var(--sr);width:144px;height:26px}
+  body.compact #touch > #tThr{height:calc(100vh - var(--st) - var(--sb) - 96px)}
+  body.compact #touch > #tBrake{height:calc(100vh - var(--st) - var(--sb) - 112px)}
+  body.compact #touch > #tX,body.compact #touch > #tOT,body.compact #touch > #tUp,body.compact #touch > #tDn{width:44px;height:40px;border-radius:20px}
+  body.compact #touch > #tOT{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP));bottom:var(--sb)}
+  body.compact #touch > #tX{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP));bottom:calc(var(--sb) + 46px)}
+  body.compact #touch > #tDn{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP) + 50px);bottom:var(--sb)}
+  body.compact #touch > #tUp{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP) + 50px);bottom:calc(var(--sb) + 46px)}
+  body.compact.touching #cluster{left:42%;transform:translateX(-50%) scale(.55)}
+  body.compact #touch > #tClutch{left:calc(var(--sl) + var(--wh) + 8px);bottom:var(--sb);width:80px;height:44px}
+  body.compact #startl{top:calc(var(--st) + 58px);transform:translateX(-50%) scale(.42)}
+  body.compact #radio,body.compact #launchTip{top:calc(var(--st) + 92px);left:42%}
+}
