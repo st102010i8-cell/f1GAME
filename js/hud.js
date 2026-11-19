@@ -2,6 +2,9 @@
 /* Grid 2026 — HUD */
 /* ================= HUD ================= */
 const rowsEl=$('rows');const rowEls=[];for(let k=0;k<10;k++){const r=document.createElement('div');r.className='trow';r.innerHTML='<span class="p"></span><span class="chip"></span><span class="code"></span><span class="gap"></span>';rowsEl.appendChild(r);rowEls.push(r)}
+// phones: the timing tower shows the top 3 plus you until tapped; the map folds to a small tab when tapped
+let towerFull=false;$('tower').addEventListener('click',()=>{towerFull=!towerFull});
+$('mini').addEventListener('click',()=>{if(!touchEdit)document.body.classList.toggle('miniOff')});
 const mini=$('miniC'),mctx=mini.getContext('2d');let mB;
 function buildMiniPath(){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(let i=0;i<N;i++){x0=Math.min(x0,PX[i]);x1=Math.max(x1,PX[i]);z0=Math.min(z0,PZ[i]);z1=Math.max(z1,PZ[i])}const sc=Math.min((mini.width-40)/(x1-x0),(mini.height-40)/(z1-z0));mB={x0,z0,sc,ox:(mini.width-(x1-x0)*sc)/2,oz:(mini.height-(z1-z0)*sc)/2};
   miniPath=new Path2D();for(let i=0;i<=N;i+=3){const [x,y]=mp(PX[i%N],PZ[i%N]);i?miniPath.lineTo(x,y):miniPath.moveTo(x,y)}miniPath.closePath();
@@ -31,7 +34,7 @@ function updateHUD(dt){const p=player;const vk=Math.round(Math.abs(p.v)*3.6);bli
   const order=[...cars].sort((a,b)=>(b.finished-a.finished)||(a.finished&&b.finished?a.finishT-b.finishT:progress(b)-progress(a)));
   const myPos=order.indexOf(p)+1;$('pos').textContent='P'+myPos;
   if(p.lastPos&&myPos<p.lastPos&&raceT>3)radio(`超車成功，現在 P${myPos}`,'pos',4);p.lastPos=myPos;
-  rowEls.forEach((r,k)=>{r.hidden=k>=order.length});
+  {const cut=document.body.classList.contains('compact')&&!towerFull;rowEls.forEach((r,k)=>{r.hidden=k>=order.length||(cut&&k>=3&&!order[k].me)});$('tower').classList.toggle('cut',cut&&order.length>3)}
   order.forEach((c,k)=>{const r=rowEls[k];r.className='trow'+(c.me?' me':'');r.children[0].textContent=k+1;r.children[1].style.background=c.team.base;r.children[2].textContent=c.code;
     let g='';if(k===0)g=c.finished?'FINISH':'LEADER';else{const gg=gapBehind(order[k-1],c);g=gg==null?'—':'+'+gg.toFixed(1)}r.children[3].textContent=g});
   if(opts.mode==='tt'){$('tLap').textContent=p.laps<0?'暖胎':p.laps+1;$('tTot').textContent='計時'}else{$('tLap').textContent=clamp(p.laps+1,1,opts.laps);$('tTot').textContent=opts.laps}

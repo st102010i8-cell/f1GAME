@@ -69,7 +69,7 @@ function loadTrackCore(def){
   HASH=new Map();for(let i=0;i<N;i++){const key=hashKey(PX[i],PZ[i]);let l=HASH.get(key);if(!l)HASH.set(key,l=[]);l.push(i)}
   let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(let i=0;i<N;i++){x0=Math.min(x0,PX[i]);x1=Math.max(x1,PX[i]);z0=Math.min(z0,PZ[i]);z1=Math.max(z1,PZ[i])}CX=(x0+x1)/2;CZ=(z0+z1)/2;RAD=Math.hypot(x1-x0,z1-z0)/2;BB=[x0,x1,z0,z1];
   // real elevation profile (from car-position telemetry), sampled at equal lap fractions
-  {const ev=TRACK_ELEV[def.id];if(ev){const K=ev.length,rawY=new Float32Array(N);for(let i=0;i<N;i++){const f=i/N*K,a=Math.floor(f)%K,b=(a+1)%K;rawY[i]=lerp(ev[a],ev[b],f-Math.floor(f))}PY=smooth(rawY,5)}}
+  {const ev=TRACK_ELEV[def.id];if(ev){const K=ev.length,rawY=new Float32Array(N);for(let i=0;i<N;i++){const f=i/N*K,a=Math.floor(f)%K,b=(a+1)%K;const t=f-Math.floor(f),e0=ev[(a-1+K)%K],e1=ev[a],e2=ev[b],e3=ev[(b+1)%K];rawY[i]=0.5*((2*e1)+(-e0+e2)*t+(2*e0-5*e1+4*e2-e3)*t*t+(-e0+3*e1-3*e2+e3)*t*t*t)}PY=smooth(smooth(rawY,5),5)}}
   // crossovers (figure-8): the higher branch becomes a bridge; top up the real gap to a drivable clearance
   XN=new Uint8Array(N);BR=new Uint8Array(N);const centers=[];
   for(let i=0;i<N;i+=2)forNear(PX[i],PZ[i],5,j=>{if(j>i&&cdist(i,j)>300&&(PX[i]-PX[j])**2+(PZ[i]-PZ[j])**2<25&&!centers.some(c=>cdist(c[1],j)<120))centers.push([i,j])});
@@ -158,5 +158,5 @@ function buildProfile(team){const prof=new Float32Array(N);const mu=PHY.mu*team.
   return prof}
 
 const $=id=>document.getElementById(id);
-const VERSION='2.0.1';
+const VERSION='2.2.1';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
