@@ -39,7 +39,7 @@ function updatePlayer(c,dt){
     if(c.lT>0){c.lT-=dt;if(c.lT<=0){c.lTr=1;c.lPw=1}}
     if(c.lSpin>0){c.lSpin-=dt;const fx=Math.sin(c.h),fz=Math.cos(c.h);for(const sd of [-0.8,0.8])emitSmoke(c.x-fx*1.75+fz*sd,c.y+0.25,c.z-fz*1.75-fx*sd)}}
   c.idx=nearest(c.x,c.z,c.idx,24);const i=c.idx;const dx=c.x-PX[i],dz=c.z-PZ[i];
-  const along=dx*TX[i]+dz*TZ[i];c.d=dx*NX[i]+dz*NZ[i];c.s=wrapS(i*DS+along);{const f=clamp(along/DS,-1,1);c.y=f>=0?lerp(PY[i],PY[(i+1)%N],f):lerp(PY[i],PY[(i-1+N)%N],-f)}
+  const along=dx*TX[i]+dz*TZ[i];c.d=dx*NX[i]+dz*NZ[i];c.s=wrapS(i*DS+along);{const f=clamp(along/DS,-1,1);c.y=f>=0?lerp(PY[i],PY[(i+1)%N],f):lerp(PY[i],PY[(i-1+N)%N],-f);c.y+=bankY(BK[i],c.d)}
   const slope=GR[i]*(Math.sin(c.h)*TX[i]+Math.cos(c.h)*TZ[i]);c.pitch=(c.pitch||0)+(-Math.atan(slope)-(c.pitch||0))*Math.min(1,dt*8);
   const ad=Math.abs(c.d);let surfMu=1,surfDrag=0;
   if(live&&gfx().lv>=2&&v>22&&((brk>0.9&&Math.abs(c.steer)>0.45)||ad>HW+1.4)){const fx=Math.sin(c.h),fz=Math.cos(c.h);emitSmoke(c.x-fx*1.75+fz*(Math.random()<.5?-0.8:0.8),c.y+0.2,c.z-fz*1.75)}
@@ -89,7 +89,7 @@ function updatePlayer(c,dt){
   const steerMax=0.34*(A.steer||1)/(1+vabs/24);const delta=c.steer*steerMax;
   let yaw=v*Math.tan(delta)/PHY.wb;
   const brkUse=Fb/(mu*1.05*gN*PHY.m+1e-6);const turnInBias=1+0.02*(56-bias)*brkUse;
-  const aLatMax=mu*gN*Math.sqrt(Math.max(0.15,1-0.7*brkUse*brkUse))*turnInBias;
+  const aLatMax=mu*gN*Math.sqrt(Math.max(0.15,1-0.7*brkUse*brkUse))*turnInBias+PHY.g*Math.abs(BK[i]);
   let latA=Math.abs(yaw*v),slide=0;
   if(latA>aLatMax&&vabs>1){slide=(latA-aLatMax)/aLatMax;yaw=Math.sign(yaw)*aLatMax/vabs;latA=aLatMax}
   const Fscrub=Math.min(slide,1.5)*PHY.m*3.2;

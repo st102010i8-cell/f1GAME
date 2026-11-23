@@ -16,12 +16,14 @@ const TRACKS=[
  {id:'at-1969',pit:-1,name:'Red Bull Ring',zh:'紅牛賽道',country:'奧地利 · 史匹堡',km:4.318,turns:10,diff:1,hw:8,wall:30,run:17,theme:'green',desc:'只有 10 個彎，三段長直道接重煞彎，最容易上手的正式賽道。'},
  {id:'it-1922',pit:-1,name:'Monza',zh:'蒙札',country:'義大利',km:5.793,turns:11,diff:2,hw:8,wall:28,run:16,theme:'park',desc:'速度神殿。長直道接減速彎，重點是煞車點和直道模式的時機。'},
  {id:'bh-2002',pit:-1,name:'Bahrain',zh:'巴林國際賽道',country:'巴林 · 薩基爾',km:5.412,turns:15,diff:2,hw:8.5,wall:30,run:18,theme:'desert',desc:'多個重煞髮夾彎，出彎加速與電量回收決定圈速。'},
+ {id:'es-1991',pit:-1,name:'Barcelona-Catalunya',zh:'巴塞隆納－加泰隆尼亞',country:'西班牙 · 蒙梅洛',km:4.657,turns:14,diff:2,hw:8,wall:30,run:17,theme:'park',desc:'經典測試賽道。超長起跑直道接 T1–T2，T3 高速長右彎最吃下壓力與左前胎，T9 Campsa 是坡頂盲彎，最後兩個右彎全油門衝回直道。'},
  {id:'ca-1978',pit:1,name:'Gilles-Villeneuve',zh:'吉爾·維倫紐夫賽道',country:'加拿大 · 蒙特婁',km:4.361,turns:14,diff:3,hw:7.5,wall:17,run:8,theme:'park',desc:'島上的半永久賽道，牆很近，最後減速彎一碰就撞牆。'},
  {id:'gb-1948',pit:-1,name:'Silverstone',zh:'銀石',country:'英國',km:5.891,turns:18,diff:3,hw:8.5,wall:30,run:17,theme:'green',desc:'高速連續彎多，考驗下壓力設定與連續換向。'},
  {id:'br-1940',name:'Interlagos',zh:'英特拉格斯',country:'巴西 · 聖保羅',km:4.309,turns:15,diff:3,hw:7.5,wall:22,run:13,theme:'city',desc:'逆時針賽道，開場的 Senna S 是最好的超車點。'},
  {id:'be-1925',pit:-1,name:'Spa-Francorchamps',zh:'斯帕',country:'比利時',km:7.004,turns:19,diff:4,hw:8,wall:28,run:16,theme:'forest',desc:'7 公里，全年最長賽道。Kemmel 長直道和高速 Pouhon 左彎。'},
  {id:'hu-1986',pit:-1,name:'Hungaroring',zh:'匈牙利賽道',country:'匈牙利 · 布達佩斯',km:4.381,turns:14,diff:4,hw:7.5,wall:24,run:14,theme:'green',desc:'彎多直道少，幾乎沒有超車機會，排位就是一切。'},
  {id:'jp-1962',name:'Suzuka',zh:'鈴鹿',country:'日本',km:5.807,turns:18,diff:4,hw:7.5,wall:22,run:13,pit:-1,theme:'park',desc:'8 字形立體交叉，第一區的 S 字連續彎要一口氣串起來。'},
+ {id:'es-2026',pit:-1,name:'Madring',zh:'馬德里環賽道',country:'西班牙 · 馬德里',km:5.474,turns:22,diff:4,hw:7.5,wall:18,run:9,theme:'city',bank:{a:0.41,b:0.49,deg:13.5},desc:'2026 年新加入的半街道賽道，穿過 IFEMA 展館區的連續技術彎，La Monumental 是路面帶傾斜角的長右彎，後段有連續重煞超車點。'},
  {id:'mc-1929',name:'Monaco',zh:'摩納哥',country:'摩納哥 · 蒙地卡羅',km:3.337,turns:19,diff:5,hw:5.5,wall:11.5,run:4,theme:'city',desc:'狹窄街道、全年最慢的髮夾彎，兩側都是護欄，沒有犯錯空間。'}
 ];
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -44,6 +46,9 @@ function forNear(x,z,r,cb){const c=Math.ceil(r/12),gx=Math.floor(x/12),gz=Math.f
 function trackDist(x,z,maxR){let best=maxR*maxR;forNear(x,z,maxR,j=>{const d=(x-PX[j])**2+(z-PZ[j])**2;if(d<best)best=d});return Math.sqrt(best)}
 function nearestGlobal(x,z){let best=1e18,bi=0;for(let r=24;r<5000&&best===1e18;r*=2)forNear(x,z,r,j=>{const d=(x-PX[j])**2+(z-PZ[j])**2;if(d<best){best=d;bi=j}});return bi}
 const smooth=(src,w)=>{const o=new Float32Array(N);for(let i=0;i<N;i++){let s=0;for(let k=-w;k<=w;k++)s+=src[(i+k+N)%N];o[i]=s/(2*w+1)}return o};
+// BK: road cross-slope (tan of the banking angle, signed so the outside of the corner is higher)
+let BK=new Float32Array(0);
+const bankW=()=>HW+1.5,bankY=(bk,d)=>bk?bk*clamp(d,-bankW(),bankW()):0;
 let OTDET=-1,TGL=new Uint8Array(0),TGR=new Uint8Array(0),HUBS=[];
 function loadTrackCore(def){
   TRK=def;HW=def.hw;RUNOFF=def.run;
@@ -70,6 +75,9 @@ function loadTrackCore(def){
   let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(let i=0;i<N;i++){x0=Math.min(x0,PX[i]);x1=Math.max(x1,PX[i]);z0=Math.min(z0,PZ[i]);z1=Math.max(z1,PZ[i])}CX=(x0+x1)/2;CZ=(z0+z1)/2;RAD=Math.hypot(x1-x0,z1-z0)/2;BB=[x0,x1,z0,z1];
   // real elevation profile (from car-position telemetry), sampled at equal lap fractions
   {const ev=TRACK_ELEV[def.id];if(ev){const K=ev.length,rawY=new Float32Array(N);for(let i=0;i<N;i++){const f=i/N*K,a=Math.floor(f)%K,b=(a+1)%K;const t=f-Math.floor(f),e0=ev[(a-1+K)%K],e1=ev[a],e2=ev[b],e3=ev[(b+1)%K];rawY[i]=0.5*((2*e1)+(-e0+e2)*t+(2*e0-5*e1+4*e2-e3)*t*t+(-e0+3*e1-3*e2+e3)*t*t*t)}PY=smooth(smooth(rawY,5),5)}}
+  // banked corners: def.bank {a,b} as lap fractions; 80 m ramps in and out
+  BK=new Float32Array(N);if(def.bank){const B=def.bank,a=B.a*TL,b=B.b*TL,ramp=80;let ks=0;for(let i=Math.floor(a/DS);i<b/DS;i++)ks+=KS[i%N];const sg=Math.sign(ks)||1,tb=Math.tan(B.deg*Math.PI/180);
+   for(let i=0;i<N;i++){const x=i*DS,w=clamp(Math.min(x-a,b-x)/ramp+0.5,0,1);if(w>0)BK[i]=sg*tb*w*w*(3-2*w)}}
   // crossovers (figure-8): the higher branch becomes a bridge; top up the real gap to a drivable clearance
   XN=new Uint8Array(N);BR=new Uint8Array(N);const centers=[];
   for(let i=0;i<N;i+=2)forNear(PX[i],PZ[i],5,j=>{if(j>i&&cdist(i,j)>300&&(PX[i]-PX[j])**2+(PZ[i]-PZ[j])**2<25&&!centers.some(c=>cdist(c[1],j)<120))centers.push([i,j])});
@@ -126,7 +134,7 @@ function loadTrackCore(def){
   let ymin=1e9,ymax=-1e9,ysum=0;for(let i=0;i<N;i++){ymin=Math.min(ymin,PY[i]);ymax=Math.max(ymax,PY[i]);ysum+=PY[i]}HAVG=ysum/N;HRANGE=ymax-ymin;
   // terrain model: flat across each track corridor, inverse-distance blend between sections, fading to the mean far away
   TCELL=clamp((Math.max(BB[1]-BB[0],BB[3]-BB[2])+900)/300,6,12);TR0=def.wall+3+TCELL*1.5;
-  CAPH=new Map();for(let i=0;i<N;i+=2)if(!BR[i]){const key=Math.floor(PX[i]/30)+','+Math.floor(PZ[i]/30);let l=CAPH.get(key);if(!l)CAPH.set(key,l=[]);l.push(PX[i],PZ[i],PY[i]-0.45,Math.max(WL[i],WR[i])+3)}
+  CAPH=new Map();for(let i=0;i<N;i+=2)if(!BR[i]){const key=Math.floor(PX[i]/30)+','+Math.floor(PZ[i]/30);let l=CAPH.get(key);if(!l)CAPH.set(key,l=[]);l.push(PX[i],PZ[i],PY[i]-0.45-Math.abs(BK[i])*bankW(),Math.max(WL[i],WR[i])+3)}
   {const xs=[],zs=[],ys=[];for(let i=0;i<N;i+=6)if(!BR[i]){xs.push(PX[i]);zs.push(PZ[i]);ys.push(PY[i])}TSX=Float32Array.from(xs);TSZ=Float32Array.from(zs);TSY=Float32Array.from(ys)}
 }
 function terrainH(x,z){let best=1e18,sw=0,sy=0;const n=TSX.length;
@@ -138,7 +146,7 @@ function terrainH(x,z){let best=1e18,sw=0,sy=0;const n=TSX.length;
 const wrapS=s=>((s%TL)+TL)%TL;
 const pitRel=s=>wrapS(s-PIT.a);
 const inPit=c=>{const r=pitRel(c.s);return r>PIT.T&&r<PIT.len-PIT.T&&c.d*PIT.side>PIT.PW};
-function at(s,d,out){s=wrapS(s);const f=s/DS,i=Math.floor(f)%N,j=(i+1)%N,t=f-Math.floor(f);const x=lerp(PX[i],PX[j],t),z=lerp(PZ[i],PZ[j],t);let tx=lerp(TX[i],TX[j],t),tz=lerp(TZ[i],TZ[j],t);const l=Math.hypot(tx,tz);tx/=l;tz/=l;out.x=x+tz*d;out.z=z-tx*d;out.y=lerp(PY[i],PY[j],t);out.h=Math.atan2(tx,tz);out.i=i;return out}
+function at(s,d,out){s=wrapS(s);const f=s/DS,i=Math.floor(f)%N,j=(i+1)%N,t=f-Math.floor(f);const x=lerp(PX[i],PX[j],t),z=lerp(PZ[i],PZ[j],t);let tx=lerp(TX[i],TX[j],t),tz=lerp(TZ[i],TZ[j],t);const l=Math.hypot(tx,tz);tx/=l;tz/=l;out.x=x+tz*d;out.z=z-tx*d;out.y=lerp(PY[i],PY[j],t)+bankY(lerp(BK[i],BK[j],t),d);out.h=Math.atan2(tx,tz);out.i=i;return out}
 function nearest(x,z,guess,win){let best=1e18,bi=guess;for(let k=-win;k<=win;k++){const i=(guess+k+N)%N;const dx=x-PX[i],dz=z-PZ[i];const d=dx*dx+dz*dz;if(d<best){best=d;bi=i}}return bi}
 const inZone=(s,z)=>z.a<z.b?(s>=z.a&&s<=z.b):(s>=z.a||s<=z.b);
 const zoneAt=s=>{for(let k=0;k<ZONES.length;k++)if(inZone(s,ZONES[k]))return k;return -1};
@@ -152,11 +160,11 @@ const powerFrac=rpm=>rpm>=PHY.rev+60?0:clamp(0.32+0.68*(rpm-4000)/6500,0.32,1);
 const ERS_CAP={save:220e3,balance:290e3,attack:350e3};
 function cornerSpeed(R,mu,ClA){const k=0.5*PHY.rho*ClA/PHY.m;const den=1-mu*k*R;return den<=0.02?200:Math.sqrt(mu*PHY.g*R/den)}
 function buildProfile(team){const prof=new Float32Array(N);const mu=PHY.mu*team.grip;
-  for(let i=0;i<N;i++){const R=Math.abs(KS[i])>1e-6?1.3/Math.abs(KS[i]):1e6;prof[i]=Math.min(cornerSpeed(R,mu,PHY.ClA_Z),100)}
+  for(let i=0;i<N;i++){const R=Math.abs(KS[i])>1e-6?1.3/Math.abs(KS[i]):1e6;prof[i]=Math.min(cornerSpeed(R,mu+Math.abs(BK[i]),PHY.ClA_Z),100)}
   for(let pass=0;pass<2;pass++)for(let c=0;c<N;c++){const i=c,j=(c+1)%N;const v=prof[i];const z=zoneAt(i*DS)>=0;const CdA=z?PHY.CdA_X:PHY.CdA_Z;const P=(PHY.ice+PHY.ers*ersTaper(v*3.6,false)*0.85)*team.power;const k=0.5*PHY.rho*PHY.ClA_Z/PHY.m;const trac=mu*(PHY.g+k*v*v)*0.62;const a=Math.min(P/Math.max(v,4)/PHY.m,trac)-0.5*PHY.rho*CdA*v*v/PHY.m-PHY.Crr*PHY.g-PHY.g*GR[i];const vn=Math.sqrt(Math.max(1,v*v+2*a*DS));if(prof[j]>vn)prof[j]=vn}
   for(let pass=0;pass<2;pass++)for(let c=N-1;c>=0;c--){const i=c,j=(c+1)%N;const v=prof[j];const k=0.5*PHY.rho*PHY.ClA_Z/PHY.m;const a=Math.max(3,mu*(PHY.g+k*v*v)+0.5*PHY.rho*PHY.CdA_Z*v*v/PHY.m+PHY.g*GR[i]);const vp=Math.sqrt(v*v+2*a*DS);if(prof[i]>vp)prof[i]=vp}
   return prof}
 
 const $=id=>document.getElementById(id);
-const VERSION='2.2.1';
+const VERSION='2.3.0';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};

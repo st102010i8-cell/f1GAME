@@ -16,13 +16,15 @@ const RIB_SUB=2;
 const crY=(i,t)=>{const a=PY[(i-1+N)%N],b=PY[i],c=PY[(i+1)%N],d=PY[(i+2)%N];return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t)};
 function ribbon(f0,f1,yo,uLen,filter,vs,cols){cols=cols||1;const pos=[],uv=[],idx=[],W=cols+1;let v=0,run=-1;
   for(let c=0;c<=N*RIB_SUB;c++){const i=Math.floor(c/RIB_SUB)%N,t=(c%RIB_SUB)/RIB_SUB,j=(i+1)%N;const on=!filter||(filter(i)&&(t===0||filter(j)));
-    if(on){if(run<0)run=v;const d0=t?lerp(f0(i),f0(j),t):f0(i),d1=t?lerp(f1(i),f1(j),t):f1(i),y=(t?crY(i,t):PY[i])+yo,u=c*DS/RIB_SUB/uLen;
+    if(on){if(run<0)run=v;const d0=t?lerp(f0(i),f0(j),t):f0(i),d1=t?lerp(f1(i),f1(j),t):f1(i),y=(t?crY(i,t):PY[i])+yo,bk=t?lerp(BK[i],BK[j],t):BK[i],u=c*DS/RIB_SUB/uLen;
     let px=PX[i],pz=PZ[i],nx=NX[i],nz=NZ[i];if(t){px=lerp(PX[i],PX[j],t);pz=lerp(PZ[i],PZ[j],t);nx=lerp(NX[i],NX[j],t);nz=lerp(NZ[i],NZ[j],t);const l=Math.hypot(nx,nz)||1;nx/=l;nz/=l}
-    for(let q=0;q<=cols;q++){const d=d0+(d1-d0)*q/cols;pos.push(px+nx*d,y,pz+nz*d);uv.push(u,vs?d/vs:q/cols)}
+    for(let q=0;q<=cols;q++){const d=d0+(d1-d0)*q/cols;pos.push(px+nx*d,y+bankY(bk,d),pz+nz*d);uv.push(u,vs?d/vs:q/cols)}
     v+=W;if(v-run>=2*W){const p=v-2*W;for(let q=0;q<cols;q++){const a=p+q,b=p+W+q;idx.push(a,b,a+1,a+1,b,b+1)}}}else run=-1}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g}
-function wallGeo(side){const pos=[],idx=[];for(let c=0;c<=N;c++){const i=c%N;const TG=side>0?TGL:TGR,d=TG[i]?side*(HW+2):(side>0?WL[i]:-WR[i])+side*0.5;const x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;const bot=PY[i]-(BR[i]?0.8:25);pos.push(x,bot,z,x,PY[i]+1.1,z);if(c>0&&!TG[i]&&!TG[(i-1+N)%N]){const v=c*2;idx.push(v-2,v,v-1,v-1,v,v+1)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g}
-function signSpot(s0,side){const i=Math.floor(wrapS(s0)/DS)%N,r=pitRel(s0),pit=side===PIT.side&&(r<PIT.len+15||r>TL-15);return pit?{off:PIT.PW,lift:1.6}:{off:(side>0?WL[i]:WR[i])+SIGN_BACK,lift:0}}
+function wallGeo(side){const pos=[],idx=[];for(let c=0;c<=N;c++){const i=c%N;const TG=side>0?TGL:TGR,d=TG[i]?side*(HW+2):(side>0?WL[i]:-WR[i])+side*0.5;const x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;const by=bankY(BK[i],d),bot=PY[i]+by-(BR[i]?0.8:25);pos.push(x,bot,z,x,PY[i]+by+1.1,z);if(c>0&&!TG[i]&&!TG[(i-1+N)%N]){const v=c*2;idx.push(v-2,v,v-1,v-1,v,v+1)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g}
+function signSpot(s0,side){const i=Math.floor(wrapS(s0)/DS)%N,r=pitRel(s0),pit=side===PIT.side&&(r<PIT.len+15||r>TL-15);
+  if(pit){const onWall=r>PIT.T+10&&r<PIT.len-PIT.T-10;return onWall?{off:PIT.PW,lift:1.6,ok:true}:{ok:false}} // no wall on the entry / exit roads
+  return {off:(side>0?WL[i]:WR[i])+SIGN_BACK,lift:0,ok:true}}
 // trackside signs stand this far behind the wall face (clear of the 0.35 m ad boards and their posts);
 // panels start SIGN_CLEAR above the ground, i.e. 0.3 m over the top of the 2.5 m advertising boards
 const SIGN_BACK=1.75,SIGN_CLEAR=2.8;
@@ -48,11 +50,18 @@ function buildTrackScene(def){
   {const rm=new THREE.MeshLambertMaterial({map:texRun,side:DSIDE});G.add(new THREE.Mesh(ribbon(()=>HW-0.5,runOut,0.0,14,i=>!TGL[i],14,7),rm));G.add(new THREE.Mesh(ribbon(runIn,()=>-HW+0.5,0.0,14,i=>!TGR[i],14,7),rm));
    // infield fans for tight corners, with a tyre stack on the hub
    if(HUBS.length){const pos=[],uv=[],idx=[];let v=0;const o=new THREE.Object3D(),col=new THREE.Color(),cyl=new THREE.CylinderGeometry(1.25,1.25,0.4,14),im=new THREE.InstancedMesh(cyl,new THREE.MeshLambertMaterial({color:0xffffff}),HUBS.length*3);
-     HUBS.forEach((h,hk)=>{const hub=v;pos.push(h.x,h.y+0.01,h.z);uv.push(h.x/6,h.z/6);v++;
+     HUBS.forEach((h,hk)=>{const vs=v;
        // a ring that keeps the road's own height out past the kerb, then a fan from that ring to the hub
        const tri=(a,b,c)=>{const ax=pos[b*3]-pos[a*3],az=pos[b*3+2]-pos[a*3+2],bx=pos[c*3]-pos[a*3],bz=pos[c*3+2]-pos[a*3+2];if(az*bx-ax*bz>0)idx.push(a,b,c);else idx.push(a,c,b)};
        for(let q=-1;q<=h.len;q++){const i=(h.i0+q+N)%N,dh=Math.hypot(PX[i]-h.x,PZ[i]-h.z);for(const off of [HW-0.5,Math.min(HW+2.2,dh-1)]){const d=h.sd*off,x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;pos.push(x,PY[i]+0.01,z);uv.push(x/6,z/6);v++}
-         if(q>-1){tri(v-4,v-2,v-3);tri(v-3,v-2,v-1);tri(hub,v-3,v-1)}}
+         // each row gets its own hub vertex at that row's road height: on a climbing hairpin the infield rises with the road
+         // (a ruled surface) instead of tilting towards one fixed hub height; the tyre stack covers the hub itself
+         pos.push(h.x,PY[i]+0.01,h.z);uv.push(h.x/6,h.z/6);v++;
+         if(q>-1){tri(v-6,v-3,v-5);tri(v-5,v-3,v-2);tri(v-4,v-5,v-2);tri(v-4,v-2,v-1)}}
+       // the two open ends of the infield slope down and away like a small embankment, so there is no step to the ground
+       const skirt=(r,i,dir)=>{const b=vs+r*3,n0=v;for(const k of [0,1,2]){pos.push(pos[(b+k)*3]+dir*TX[i]*4,pos[(b+k)*3+1]-2.4,pos[(b+k)*3+2]+dir*TZ[i]*4);uv.push(pos[(b+k)*3]/6,pos[(b+k)*3+2]/6);v++}
+         tri(b,b+1,n0+1);tri(b,n0+1,n0);tri(b+1,b+2,n0+2);tri(b+1,n0+2,n0+1)};
+       skirt(0,(h.i0-1+N)%N,-1);skirt(h.len+1,(h.i0+h.len+N)%N,1);
        for(let k=0;k<3;k++){o.position.set(h.x,h.y+0.2+k*0.4,h.z);o.updateMatrix();im.setMatrixAt(hk*3+k,o.matrix);col.setHex(k%2?0xeeeeee:0xd4282c);im.setColorAt(hk*3+k,col)}});
      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
      const nrm=g.attributes.normal;for(let k=0;k<nrm.count;k++)nrm.setXYZ(k,0,1,0);
@@ -115,15 +124,16 @@ function buildTrackScene(def){
    }
   // straight-mode boards
   const postMat=new THREE.MeshLambertMaterial({color:0x2f3a46});
-  ZONES.forEach(z=>{[[z.a,'X MODE','#f2b33d'],[z.b,'Z MODE','#e8edf3']].forEach(([s,txt,col])=>{[1,-1].forEach(side=>{const sp=signSpot(s,side),p=at(s,side*sp.off,{});
+  ZONES.forEach(z=>{[[z.a,'X MODE','#f2b33d'],[z.b,'Z MODE','#e8edf3']].forEach(([s,txt,col])=>{[1,-1].forEach(side=>{const sp=signSpot(s,side);if(!sp.ok)return;const p=at(s,side*sp.off,{});
     const b=board(txt,col);b.position.set(p.x,p.y+SIGN_CLEAR+1+sp.lift,p.z);b.rotation.y=p.h+Math.PI+side*0.26;G.add(b);
     const post=new THREE.Mesh(new THREE.BoxGeometry(0.15,SIGN_CLEAR+sp.lift,0.15),postMat);post.position.set(p.x,p.y+(SIGN_CLEAR+sp.lift)/2,p.z);G.add(post)})})});
   // overhead gantry: two posts off the racing surface, a beam and the sign above the lane
+  const gantryOff=(s0,side)=>{const sp=signSpot(s0,side);if(sp.ok)return sp.off;const i=Math.floor(wrapS(s0)/DS)%N;return (side>0?WL[i]:WR[i])+SIGN_BACK};
   const gantry=(s0,dA,dB,txt,col,hgt)=>{const a=at(s0,dA,{}),b=at(s0,dB,{}),y=Math.max(a.y,b.y)+hgt,len=Math.hypot(a.x-b.x,a.z-b.z);
     for(const q of [a,b]){const ps=new THREE.Mesh(new THREE.BoxGeometry(0.3,y-q.y+0.3,0.3),postMat);ps.position.set(q.x,(y+q.y)/2,q.z);G.add(ps)}
     const bm=new THREE.Mesh(new THREE.BoxGeometry(len+0.3,0.3,0.3),postMat);bm.position.set((a.x+b.x)/2,y,(a.z+b.z)/2);bm.rotation.y=a.h;G.add(bm);
     const sg=board(txt,col);sg.position.set((a.x+b.x)/2,y+1.15,(a.z+b.z)/2);sg.rotation.y=a.h+Math.PI;G.add(sg)};
-  if(OTDET>=0)gantry(OTDET,signSpot(OTDET,1).off,-signSpot(OTDET,-1).off,'DETECT','#ff5ad1',5.4);
+  if(OTDET>=0)gantry(OTDET,gantryOff(OTDET,1),-gantryOff(OTDET,-1),'DETECT','#ff5ad1',5.4);
   gantry(PIT.a+PIT.T,PIT.side*PIT.PW,PIT.side*(PIT.front+0.2),'PIT 80','#f2b33d',5.0);
   // grandstands and pit garages along the start straight, only where nothing else runs
   {const standMat=[0,1,2,3,4,5].map(k=>k===2?new THREE.MeshLambertMaterial({map:texSeat}):new THREE.MeshLambertMaterial({color:k<2?0x6b7785:0x56616d}));
@@ -168,8 +178,8 @@ function buildTrackScene(def){
    const signMat=n=>dmat[n]||(dmat[n]=new THREE.MeshBasicMaterial({map:canvasTex(256,192,(c,w,h)=>{c.fillStyle='#f4f5f2';c.fillRect(0,0,w,h);c.strokeStyle='#14181d';c.lineWidth=10;c.strokeRect(5,5,w-10,h-10);c.fillStyle='#14181d';c.font='800 116px "Saira Condensed",Arial Narrow,sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(String(n),w/2,h/2+8)}),side:THREE.DoubleSide}));
    const panel=new THREE.PlaneGeometry(1.6,1.2),post=new THREE.BoxGeometry(0.1,1,0.1);
    corners.forEach((ci,k)=>{const prev=corners[(k-1+corners.length)%corners.length],gap=corners.length>1?((ci-prev+N)%N)*DS:TL;const out=Math.sign(KS[(ci+8)%N])||1;
-     for(const dist of [50,100,150,200]){if(dist>gap-40)break;const s0=ci*DS-dist,sp=signSpot(s0,out),k2=clamp(sp.off/9,1,1.9);
-       const p=at(s0,out*sp.off,{}),b=new THREE.Mesh(panel,signMat(dist));b.scale.set(k2,k2,1);b.position.set(p.x,p.y+SIGN_CLEAR+0.6*k2+sp.lift,p.z);b.rotation.y=p.h+Math.PI+out*0.26;G.add(b);
+     for(const dist of [50,100,150,200]){if(dist>gap-40)break;const s0=ci*DS-dist;let side=out,sp=signSpot(s0,side);if(!sp.ok){side=-out;sp=signSpot(s0,side)}if(!sp.ok)continue;const k2=clamp(sp.off/9,1,1.9);
+       const p=at(s0,side*sp.off,{}),b=new THREE.Mesh(panel,signMat(dist));b.scale.set(k2,k2,1);b.position.set(p.x,p.y+SIGN_CLEAR+0.6*k2+sp.lift,p.z);b.rotation.y=p.h+Math.PI+side*0.26;G.add(b);
        const ph=SIGN_CLEAR+sp.lift,ps=new THREE.Mesh(post,bmat);ps.scale.y=ph;ps.position.set(p.x,p.y+ph/2,p.z);G.add(ps)}})}
   scene.add(G);buildMiniPath();
 }
