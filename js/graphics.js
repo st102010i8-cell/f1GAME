@@ -33,9 +33,11 @@ function tickLaunchUI(){const on=clutchPhase(),held=on&&(input.clutchK||input.cl
 const RL_W=150,RL_LA=230,rlSev=new Float32Array(RL_W);
 const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 function rlSet(i,r,g,b,a){const put=o=>{rlCol[o]=r;rlCol[o+1]=g;rlCol[o+2]=b;rlCol[o+3]=a;rlCol[o+4]=r;rlCol[o+5]=g;rlCol[o+6]=b;rlCol[o+7]=a};put(i*8);if(i===0)put(N*8)}
-function cycleLine(){const A=settings.assist,o=['full','corner','off'];A.line=o[(o.indexOf(A.line||'full')+1)%3];saveSettings();toast('賽車線：'+{full:'完整顯示',corner:'僅限彎道',off:'關閉'}[A.line])}
+function cycleLine(){const A=settings.assist,o=['full','corner','off'];A.line=o[(o.indexOf(A.line||'full')+1)%3];saveSettings();renderPauseLine();toast('賽車線：'+{full:'完整顯示',corner:'僅限彎道',off:'關閉'}[A.line])}
+function renderPauseLine(){const el=$('pauseLine');if(!el)return;const m=settings.assist.line||'full';[...el.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===m)))}
+{const el=$('pauseLine');if(el)[...el.children].forEach(b=>b.onclick=()=>{settings.assist.line=b.dataset.v;saveSettings();renderPauseLine()})}
 function updateLine(){if(!rlMesh)return;const mode=settings.assist.line||'full',p=player,prof=PROFILES[opts.team];
-  const show=mode!=='off'&&state==='race'&&!!p&&!!prof&&prof.length===N&&!p.inPit;
+  const show=mode!=='off'&&state==='race'&&!!p&&!!prof&&prof.length===N&&!p.ap; // shown in the pit lane too (time trial starts there); hidden only while the team drives the car
   if(rlMesh.visible!==show)rlMesh.visible=show;if(!show)return;
   for(let c=0;c<rlN;c++)rlSet((rlI0+c)%N,0,0,0,0);
   const v=Math.max(p.v,0),k=0.5*PHY.rho*PHY.ClA_Z/PHY.m,aMax=PHY.mu*p.team.grip*(PHY.g+k*v*v)+0.5*PHY.rho*PHY.CdA_Z*v*v/PHY.m;

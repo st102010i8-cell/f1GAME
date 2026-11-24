@@ -4,7 +4,7 @@
 const show=(id,on)=>{$(id).hidden=!on};
 const HUDS=['tower','lap','cluster','mini'];
 const SCREENS=['menu','trackScreen','pause','results'];
-function screen(id){SCREENS.forEach(s=>show(s,s===id))}
+function screen(id){SCREENS.forEach(s=>show(s,s===id));if(id==='pause'&&typeof renderPauseLine==='function')renderPauseLine()}
 // flying start: as far back as the start straight stays straight (80–420 m)
 function flyDist(){let d=0;while(d<420&&Math.abs(KS[Math.floor(wrapS(-d-30)/DS)%N])<1/350)d+=DS;return Math.max(80,d)}
 function startRace(){
