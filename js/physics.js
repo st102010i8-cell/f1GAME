@@ -14,6 +14,30 @@ const newTyres=k=>({comp:TYRES[k]?k:'M',w:[0,0,0,0],T:[80,80,80,80],warned:false
 const tyWearF=w=>{const life=1-w;return life>0.4?1-0.06*(1-life)/0.6:0.94-0.22*(0.4-life)/0.4};
 const tyTempF=T=>T<70?0.98-0.08*Math.min(1,(70-T)/30):T<85?0.98+0.02*(T-70)/15:T<=105?1:T<=115?1-0.02*(T-105)/10:Math.max(0.86,0.98-0.10*(T-115)/20);
 function tyreGrip(c){const ty=c.tyre;if(!ty)return 1;let a=0;for(let w=0;w<4;w++)a+=tyWearF(ty.w[w])*tyTempF(ty.T[w]);return TYRES[ty.comp].grip*a/4}
+// ---- auto pit: once the car leaves the track at the pit entry, the team drives it to the box and back out ----
+// path in pit coordinates r = distance from the pit entry; dd = lateral offset towards the pit side
+function autoPitPath(c,r){const P=PIT,fast=(P.L0+P.L1)/2,rb=pitRel(P.boxes[opts.team]),sm=x=>{x=clamp(x,0,1);return x*x*(3-2*x)};
+  if(r<P.T)return lerp(c.apIn,fast,sm((r-c.apR0)/Math.max(8,P.T-c.apR0)));
+  if(c.ap==='in'){if(r<rb-28)return fast;return lerp(fast,P.mid,sm((r-(rb-28))/22))}
+  if(r<rb)return P.mid;if(r<rb+24)return lerp(P.mid,fast,sm((r-rb)/24));
+  if(r<P.len-P.T)return fast;return lerp(fast,HW-2.5,sm((r-(P.len-P.T))/P.T))}
+function autoPitCheck(c,live){if(!live||settings.assist.autoPit===false||!PIT||tut)return;const r=pitRel(c.s),dd=c.d*PIT.side;
+  if(!c.ap){if(r<PIT.T+5&&dd>HW+0.6&&Math.abs(c.v)>2&&raceT>0){c.ap='in';c.apIn=dd;c.apR0=r;c.pitDone=false;radio('自動進站：交給車隊，保持雙手放鬆','pit',1);toast('自動進站中')}return}
+  if(c.ap==='in'&&c.pitDone)c.ap='out';
+  if(c.ap==='out'&&r>PIT.len-PIT.T*0.35&&dd<HW-1){c.ap=null;toast('回到賽道，交還控制');radio('出站完成，換你開了','pit',1)}
+  if(r>PIT.len+40&&r<TL-40){c.ap=null}} // safety: never keep control outside the pit area
+function autoPitDrive(c){const r=pitRel(c.s),v=c.v,rb=pitRel(PIT.boxes[opts.team]);
+  // speed: brake into the 80 km/h limit by the end of the entry, stop at the box, accelerate away at the exit
+  let vt=r<PIT.T?Math.sqrt(22.2*22.2+2*11*Math.max(0,PIT.T-r)):21.5;
+  if(c.ap==='in'){vt=Math.min(vt,Math.sqrt(2*4.5*Math.max(0,rb-r)));if(rb-r<1.2)vt=0}
+  else if(r>PIT.len-PIT.T)vt=40;
+  if(c.ap==='in'&&c.pitT>0)vt=0;
+  const e=vt-v;let thr=e>0.3?clamp(e*0.35,0.15,1):0,brk=e<-0.3?clamp(-e*0.22,0.1,1):0;if(vt===0){thr=0;brk=v>0.7?Math.max(brk,0.6):0} // standing still: no brake (holding it would select reverse), hill hold keeps the car put
+  // steering: pure pursuit towards a point on the path a little way ahead
+  const Ld=clamp(Math.abs(v)*0.7,5,16),q=at(PIT.a+r+Ld,PIT.side*autoPitPath(c,r+Ld),{});
+  let a=Math.atan2(q.x-c.x,q.z-c.z)-c.h;a=((a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+  const kap=2*Math.sin(a)/Ld,steerMax=0.34*(settings.assist.steer||1)/(1+Math.abs(v)/24);
+  c.steer=clamp(Math.atan(kap*PHY.wb)/steerMax,-1,1);return {thr,brk}}
 function updatePlayer(c,dt){
   const A=settings.assist,S=settings.setup,ratio=RATIO[S.gearing]||1;
   const live=state==='race';const racing=live&&raceT>0;
@@ -25,6 +49,7 @@ function updatePlayer(c,dt){
    if(input.steerTOn){const dz=(A.dead==null?10:A.dead)/100+0.03*hs,a=Math.abs(st);st=a<dz?0:Math.sign(st)*Math.pow((a-dz)/(1-dz),1+0.45*hs)} // wider, softer centre at speed
    const k=(input.steerTOn?lerp(16,9,hs):st?lerp(6,3.4,hs):lerp(4.5,9,hs))/W,maxR=lerp(5.5,2.6,hs)/W; // lag + rate limit; key release = self-aligning, stronger at speed
    c.steer+=clamp((st-c.steer)*Math.min(1,dt*k),-maxR*dt,maxR*dt)}
+  autoPitCheck(c,live);if(c.ap){const ap=autoPitDrive(c);thr=ap.thr;brk=ap.brk;c.xmode=false;otOn=false;input.clutchK=input.clutchT=0}
   let v=c.v;const prevS=c.s;
   // launch: hold the clutch on the grid, rev into the window, let go when the lights go out
   let clutchHold=false;{const cin=clutchOn()&&(input.clutchK||input.clutchT),thrIn=thr;
@@ -48,7 +73,7 @@ function updatePlayer(c,dt){
   if(ad>HW+2.4&&v>15){c.offT+=dt;if(c.offT>1.2&&raceT-offWarned>10){offWarned=raceT;radio('出界了，回到賽道上','off',10)}}else c.offT=0;
   // active aero
   const zi=zoneAt(c.s);
-  if(A.aero==='auto')c.xmode=zi>=0&&brk<0.05&&Math.abs(c.steer)<0.5;
+  if(c.ap)c.xmode=false;else if(A.aero==='auto')c.xmode=zi>=0&&brk<0.05&&Math.abs(c.steer)<0.5;
   else{if(xPress&&zi>=0)c.xmode=!c.xmode;if(zi<0||brk>0.05)c.xmode=false}
   if(xPress&&zi<0&&live)toast('不在直道模式區');xPress=false;
   if(zi>=0&&!c.xmode&&A.aero==='manual'&&v>40)radio('直道模式區 — 展開前後翼','xm',25);
@@ -60,7 +85,7 @@ function updatePlayer(c,dt){
   const mu=PHY.mu*c.team.grip*surfMu*tyreGrip(c);
   // gearbox
   if(shiftReq>0)shiftUp(c);else if(shiftReq<0)shiftDown(c,ratio);shiftReq=0;
-  if(A.gearbox==='auto'){if(c.rpm>11650&&c.gear<8&&thr>0.2)shiftUp(c);else if(c.gear>1&&rpmFor(vk,c.gear-1,ratio)<10600)shiftDown(c,ratio)}
+  if(A.gearbox==='auto'||c.ap){if(c.rpm>11650&&c.gear<8&&thr>0.2)shiftUp(c);else if(c.gear>1&&rpmFor(vk,c.gear-1,ratio)<10600)shiftDown(c,ratio)}
   else if(vk<14&&c.gear>1)c.gear=1;
   c.shiftCut=Math.max(0,c.shiftCut-dt);
   let rpm=rpmFor(vk,c.gear,ratio);if(c.gear===1&&vk<60)rpm=Math.max(rpm,4000+thr*6500*(1-vk/60));
@@ -129,4 +154,4 @@ function setMode(m){const S=settings.setup;m=clamp(m|0,0,3);if(m===S.mode)return
 function cycleMode(d){setMode(settings.setup.mode+d)}
 function toggleOT(){if(!otOn&&player&&player.soc<=PHY.batt*0.01){toast('電池沒電，OT 開不了');buzz(20);return}otOn=!otOn;buzz(otOn?[40,30,90]:15);toast(otOn?otText():'OT 關閉 · 回到「'+ERS_MODES[settings.setup.mode].n+'」'+ERS_MODES[settings.setup.mode].kw+' kW')}
 
-function resetPlayer(){wAng=wTgt=0;const c=player;c.pside=0;const p=at(c.s,0,{});c.x=p.x;c.z=p.z;c.h=p.h;c.v=0;c.yaw=0;c.steer=0;c.d=0;c.gear=1}
+function resetPlayer(){wAng=wTgt=0;const c=player;c.pside=0;c.ap=null;const p=at(c.s,0,{});c.x=p.x;c.z=p.z;c.h=p.h;c.v=0;c.yaw=0;c.steer=0;c.d=0;c.gear=1}

@@ -143,10 +143,11 @@ function renderSettings(){
     $('pane-aids').innerHTML=`<p class="note" style="margin-bottom:8px">可以依習慣開關的輔助都集中在這裡。</p>`+
      `<div class="srow"><div class="lbl">賽車線顯示</div>${segHTML('sLine',A.line||'full',[['full','完整顯示'],['corner','僅限彎道'],['off','關閉']])}<p>路面上的光帶是建議路線（外－內－外）。顏色依你當下的車速即時變化：<b>綠</b>可以全油門，<b>黃</b>該鬆油準備煞車，<b>紅</b>要立刻重煞；速度降到安全範圍就會變回黃或綠。開著 X 模式接近紅色區段時會閃爍，提醒你煞車收翼。比賽中按 L 可以切換。</p></div>`+
      `<div class="srow"><div class="lbl">起跑方式</div>${segHTML('sLaunch',A.launch||'manual',[['manual','手動離合器彈射'],['auto','自動起步']])}<p>手動：紅燈時按住離合器（鍵盤用直道模式鍵，預設 Space；觸控有「離合器」鈕）再踩油門，把轉速停在儀表外圈的綠色區（10,500～11,500 rpm），燈滅瞬間放開。在綠色區放開是完美起步，前 100 公尺抓地力 +30%；轉速太高會空轉冒煙，太低會起步無力；燈滅前放開就是偷跑，罰 5 秒。不按離合器也能照舊直接起步。自動：不顯示離合器，燈滅踩油門即可。</p></div>`+
+     `<div class="srow"><div class="lbl">自動進站</div>${segHTML('sAutoPit',A.autoPit===false?'off':'on',[['on','開'],['off','關']])}<p>開啟時，只要從維修區入口駛離賽道進入維修道，車隊就會接手：自動減速到 80 km/h、停進你的車庫換上「暫停選單」選好的輪胎，再開出維修區，回到賽道後把控制交還給你。進站途中按「暫停」可以照常操作選單。</p></div>`+
      `<div class="srow"><div class="lbl">變速箱</div>${segHTML('sGear',A.gearbox,[['auto','自動換檔'],['manual','手動換檔']])}<p>手動時用升檔／降檔鍵（預設 E／Q）。換檔燈全亮閃紫色代表該升檔；降檔若會超轉會被擋下。時速低於 14 km/h 會自動退回 1 檔。</p></div>`+
      `<div class="srow"><div class="lbl">直道模式（主動空力）</div>${segHTML('sAero',A.aero,[['manual','手動'],['auto','自動']])}<p>只能在直道模式區使用，踩煞車或離開區段會自動收回前後翼。</p></div>`+
      `<div class="srow"><div class="lbl">煞車優先（防誤觸）</div>${segHTML('sGuard',A.guard===false?'off':'on',[['on','開'],['off','關']])}<p>開啟時，觸控煞車踩超過 15% 就切斷油門，避免兩根拇指同時壓到。想練左腳煞車、油門煞車重疊的話可以關掉。這個遊戲沒有模擬輪胎鎖死，所以沒有防鎖死（ABS）選項。</p></div>`;
-    bindSeg('sLine',v=>A.line=v);bindSeg('sLaunch',v=>A.launch=v);bindSeg('sGear',v=>A.gearbox=v);bindSeg('sAero',v=>A.aero=v);bindSeg('sGuard',v=>A.guard=v==='on');
+    bindSeg('sLine',v=>A.line=v);bindSeg('sLaunch',v=>A.launch=v);bindSeg('sGear',v=>A.gearbox=v);bindSeg('sAero',v=>A.aero=v);bindSeg('sGuard',v=>A.guard=v==='on');bindSeg('sAutoPit',v=>A.autoPit=v==='on');
   }else{const S=settings.setup;
     const ratio=RATIO[S.gearing];const est=(df)=>{const CdA=PHY.CdA_X*(1+0.03*df);return Math.round(Math.cbrt((PHY.ice+PHY.ers*0.15)/(0.5*PHY.rho*CdA))*3.6)};
     $('pane-setup').innerHTML=
