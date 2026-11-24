@@ -50,19 +50,28 @@ function buildTrackScene(def){
   {const rm=new THREE.MeshLambertMaterial({map:texRun,side:DSIDE});G.add(new THREE.Mesh(ribbon(()=>HW-0.5,runOut,0.0,14,i=>!TGL[i],14,7),rm));G.add(new THREE.Mesh(ribbon(runIn,()=>-HW+0.5,0.0,14,i=>!TGR[i],14,7),rm));
    // infield fans for tight corners, with a tyre stack on the hub
    if(HUBS.length){const pos=[],uv=[],idx=[];let v=0;const o=new THREE.Object3D(),col=new THREE.Color(),cyl=new THREE.CylinderGeometry(1.25,1.25,0.4,14),im=new THREE.InstancedMesh(cyl,new THREE.MeshLambertMaterial({color:0xffffff}),HUBS.length*3);
-     HUBS.forEach((h,hk)=>{const vs=v;
-       // a ring that keeps the road's own height out past the kerb, then a fan from that ring to the hub
+     HUBS.forEach((h,hk)=>{
+       // a ring that keeps the road's own height out past the kerb, then K rings closing in on one shared hub vertex.
+       // Outer ring = exact road height of that row; towards the hub the heights are averaged over a widening window
+       // and blend to the corner's mean height, so a climbing hairpin gives one smooth surface (no folds, no steps).
        const tri=(a,b,c)=>{const ax=pos[b*3]-pos[a*3],az=pos[b*3+2]-pos[a*3+2],bx=pos[c*3]-pos[a*3],bz=pos[c*3+2]-pos[a*3+2];if(az*bx-ax*bz>0)idx.push(a,b,c);else idx.push(a,c,b)};
-       for(let q=-1;q<=h.len;q++){const i=(h.i0+q+N)%N,dh=Math.hypot(PX[i]-h.x,PZ[i]-h.z);for(const off of [HW-0.5,Math.min(HW+2.2,dh-1)]){const d=h.sd*off,x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;pos.push(x,PY[i]+0.01,z);uv.push(x/6,z/6);v++}
-         // each row gets its own hub vertex at that row's road height: on a climbing hairpin the infield rises with the road
-         // (a ruled surface) instead of tilting towards one fixed hub height; the tyre stack covers the hub itself
-         pos.push(h.x,PY[i]+0.01,h.z);uv.push(h.x/6,h.z/6);v++;
-         if(q>-1){tri(v-6,v-3,v-5);tri(v-5,v-3,v-2);tri(v-4,v-5,v-2);tri(v-4,v-2,v-1)}}
-       // the two open ends of the infield slope down and away like a small embankment, so there is no step to the ground
-       const skirt=(r,i,dir)=>{const b=vs+r*3,n0=v;for(const k of [0,1,2]){pos.push(pos[(b+k)*3]+dir*TX[i]*4,pos[(b+k)*3+1]-2.4,pos[(b+k)*3+2]+dir*TZ[i]*4);uv.push(pos[(b+k)*3]/6,pos[(b+k)*3+2]/6);v++}
-         tri(b,b+1,n0+1);tri(b,n0+1,n0);tri(b+1,b+2,n0+2);tri(b+1,n0+2,n0+1)};
-       skirt(0,(h.i0-1+N)%N,-1);skirt(h.len+1,(h.i0+h.len+N)%N,1);
-       for(let k=0;k<3;k++){o.position.set(h.x,h.y+0.2+k*0.4,h.z);o.updateMatrix();im.setMatrixAt(hk*3+k,o.matrix);col.setHex(k%2?0xeeeeee:0xd4282c);im.setColorAt(hk*3+k,col)}});
+       const K=6,rows=[],Y=[];for(let q=-1;q<=h.len;q++){const i=(h.i0+q+N)%N;rows.push(i);Y.push(PY[i])}
+       const R=rows.length,Ym=Y.reduce((x,y)=>x+y,0)/R,ysm=(q,w)=>{let t=0,n=0;for(let k=-w;k<=w;k++){const j=clamp(q+k,0,R-1);t+=Y[j];n++}return t/n};
+       const C=K+1,base=v;
+       rows.forEach((i,q)=>{const dh=Math.hypot(PX[i]-h.x,PZ[i]-h.z),ro=Math.min(HW+2.2,dh-1);
+         {const d=h.sd*(HW-0.5),x=PX[i]+NX[i]*d,z=PZ[i]+NZ[i]*d;pos.push(x,Y[q]+0.01,z);uv.push(x/6,z/6);v++}
+         const ox=PX[i]+NX[i]*h.sd*ro,oz=PZ[i]+NZ[i]*h.sd*ro;
+         for(let k=0;k<K;k++){const f=1-k/K,x=lerp(h.x,ox,f),z=lerp(h.z,oz,f),y=Ym+(ysm(q,Math.round((1-f)*R/2.5))-Ym)*f;pos.push(x,y+0.01,z);uv.push(x/6,z/6);v++}});
+       const hub=v;pos.push(h.x,Ym+0.01,h.z);uv.push(h.x/6,h.z/6);v++;
+       for(let q=1;q<R;q++){const p0=base+(q-1)*C,p1=base+q*C;
+         for(let k=0;k<C-1;k++){tri(p0+k,p1+k,p0+k+1);tri(p0+k+1,p1+k,p1+k+1)}
+         tri(p0+C-1,p1+C-1,hub)}
+       // the two open ends slope down and away like a small embankment, so there is no step to the ground
+       const skirt=(q,i,dir)=>{const ids=[];for(let k=0;k<C;k++)ids.push(base+q*C+k);ids.push(hub);const n0=v;
+         ids.forEach(b=>{pos.push(pos[b*3]+dir*TX[i]*4,pos[b*3+1]-2.4,pos[b*3+2]+dir*TZ[i]*4);uv.push(pos[b*3]/6,pos[b*3+2]/6);v++});
+         for(let k=0;k<ids.length-1;k++){tri(ids[k],ids[k+1],n0+k+1);tri(ids[k],n0+k+1,n0+k)}};
+       skirt(0,rows[0],-1);skirt(R-1,rows[R-1],1);
+       for(let k=0;k<3;k++){o.position.set(h.x,Ym+0.2+k*0.4,h.z);o.updateMatrix();im.setMatrixAt(hk*3+k,o.matrix);col.setHex(k%2?0xeeeeee:0xd4282c);im.setColorAt(hk*3+k,col)}});
      const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
      const nrm=g.attributes.normal;for(let k=0;k<nrm.count;k++)nrm.setXYZ(k,0,1,0);
      G.add(new THREE.Mesh(g,new THREE.MeshLambertMaterial({map:canvasTex(128,128,(c,w,h)=>noise(c,w,h,'#c8b48c',0.16,5200),true),side:THREE.DoubleSide})));G.add(im)}}

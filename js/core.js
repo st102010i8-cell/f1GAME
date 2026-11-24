@@ -48,7 +48,8 @@ function nearestGlobal(x,z){let best=1e18,bi=0;for(let r=24;r<5000&&best===1e18;
 const smooth=(src,w)=>{const o=new Float32Array(N);for(let i=0;i<N;i++){let s=0;for(let k=-w;k<=w;k++)s+=src[(i+k+N)%N];o[i]=s/(2*w+1)}return o};
 // BK: road cross-slope (tan of the banking angle, signed so the outside of the corner is higher)
 let BK=new Float32Array(0);
-const bankW=()=>HW+1.5,bankY=(bk,d)=>bk?bk*clamp(d,-bankW(),bankW()):0;
+// the whole cross-section (road, kerbs, run-off, walls) shares one plane, so there is no crease at the kerb
+const bankY=(bk,d)=>bk?bk*d:0;
 let OTDET=-1,TGL=new Uint8Array(0),TGR=new Uint8Array(0),HUBS=[];
 function loadTrackCore(def){
   TRK=def;HW=def.hw;RUNOFF=def.run;
@@ -134,7 +135,7 @@ function loadTrackCore(def){
   let ymin=1e9,ymax=-1e9,ysum=0;for(let i=0;i<N;i++){ymin=Math.min(ymin,PY[i]);ymax=Math.max(ymax,PY[i]);ysum+=PY[i]}HAVG=ysum/N;HRANGE=ymax-ymin;
   // terrain model: flat across each track corridor, inverse-distance blend between sections, fading to the mean far away
   TCELL=clamp((Math.max(BB[1]-BB[0],BB[3]-BB[2])+900)/300,6,12);TR0=def.wall+3+TCELL*1.5;
-  CAPH=new Map();for(let i=0;i<N;i+=2)if(!BR[i]){const key=Math.floor(PX[i]/30)+','+Math.floor(PZ[i]/30);let l=CAPH.get(key);if(!l)CAPH.set(key,l=[]);l.push(PX[i],PZ[i],PY[i]-0.45-Math.abs(BK[i])*bankW(),Math.max(WL[i],WR[i])+3)}
+  CAPH=new Map();for(let i=0;i<N;i+=2)if(!BR[i]){const key=Math.floor(PX[i]/30)+','+Math.floor(PZ[i]/30);let l=CAPH.get(key);if(!l)CAPH.set(key,l=[]);l.push(PX[i],PZ[i],PY[i]-0.45-Math.abs(BK[i])*(Math.max(WL[i],WR[i])+1),Math.max(WL[i],WR[i])+3)}
   {const xs=[],zs=[],ys=[];for(let i=0;i<N;i+=6)if(!BR[i]){xs.push(PX[i]);zs.push(PZ[i]);ys.push(PY[i])}TSX=Float32Array.from(xs);TSZ=Float32Array.from(zs);TSY=Float32Array.from(ys)}
 }
 function terrainH(x,z){let best=1e18,sw=0,sy=0;const n=TSX.length;
@@ -166,5 +167,5 @@ function buildProfile(team){const prof=new Float32Array(N);const mu=PHY.mu*team.
   return prof}
 
 const $=id=>document.getElementById(id);
-const VERSION='2.4.0';
+const VERSION='2.4.1';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
