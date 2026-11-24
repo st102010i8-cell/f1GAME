@@ -167,5 +167,5 @@ function buildProfile(team){const prof=new Float32Array(N);const mu=PHY.mu*team.
   return prof}
 
 const $=id=>document.getElementById(id);
-const VERSION='2.4.1';
+const VERSION='2.5.0';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};

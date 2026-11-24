@@ -4,9 +4,9 @@
 
 - 13 條賽道（含原創練習賽道）、5 支原創車隊、正賽與計時賽
 - 輪胎配方與磨耗、電能模式與 OT、維修區進站（可開啟自動進站）
-- 鍵盤與觸控操作、新手教學、畫質分級
+- 鍵盤與觸控操作、新手教學、畫質分級、全螢幕（iPhone 可加入主畫面）
 
-目前版本：**v2.4.1**（更新紀錄見 [CHANGELOG.md](CHANGELOG.md)）
+目前版本：**v2.5.0**（更新紀錄見 [CHANGELOG.md](CHANGELOG.md)）
 
 ## 怎麼玩
 
@@ -42,7 +42,10 @@ js/screens.js         選單畫面：車隊、賽道、設定
 js/input.js           鍵盤與觸控輸入
 js/graphics.js        畫質分級、起跑 UI、賽車線
 js/tutorial.js        新手教學
+js/fullscreen.js      全螢幕與加入主畫面說明
 js/main.js            主迴圈與啟動
+manifest.webmanifest  主畫面安裝資訊
+icons/                主畫面圖示
 ```
 
 ### 修改時要注意
