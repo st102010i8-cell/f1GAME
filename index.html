@@ -7,6 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1016">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grid 2026">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
 </head>
 <body>
 <canvas id="gl" aria-label="3D 賽道畫面"></canvas>
@@ -86,7 +94,7 @@
 <div class="ov" id="menu">
   <div class="sheet">
     <div>
-      <div class="topbar"><div class="eyebrow">步驟 1 / 2 · 選擇車隊</div><span style="display:flex;gap:8px"><button class="mini-btn" id="openTut" type="button">新手教學</button><button class="mini-btn" id="openSet1" type="button">設定</button></span></div>
+      <div class="topbar"><div class="eyebrow">步驟 1 / 2 · 選擇車隊</div><span style="display:flex;gap:8px"><button class="mini-btn fsBtn" type="button">全螢幕</button><button class="mini-btn" id="openTut" type="button">新手教學</button><button class="mini-btn" id="openSet1" type="button">設定</button></span></div>
       <h1>GRID <span>2026</span></h1>
       <p class="lede">車體依 2026 年技術規則建模：軸距 3.4 公尺、車寬 1.9 公尺、最低重量 768 公斤，前後翼可在彎道與直道模式間切換。五支車隊的性能分布，依今年車隊積分榜前五名換算。</p>
       <div class="teams" id="teams"></div>
@@ -113,7 +121,7 @@
 <div class="ov" id="trackScreen" hidden>
   <div class="sheet">
     <div>
-      <div class="topbar"><div class="eyebrow">步驟 2 / 2 · 選擇賽道</div><button class="mini-btn" id="openSet2" type="button">設定</button></div>
+      <div class="topbar"><div class="eyebrow">步驟 2 / 2 · 選擇賽道</div><span style="display:flex;gap:8px"><button class="mini-btn fsBtn" type="button">全螢幕</button><button class="mini-btn" id="openSet2" type="button">設定</button></span></div>
       <h2>賽道 · 依難度排列</h2>
       <p class="lede" style="margin-bottom:12px">賽道線形取自真實 F1 賽道的地理資料，高低差取自 2025 年正賽的賽車定位遙測，起跑線也在真實位置。</p>
       <div class="trks" id="trks"></div>
@@ -157,6 +165,7 @@
     <div style="display:grid;gap:10px;margin-top:12px">
       <button class="btn" id="resume" type="button">繼續比賽</button>
       <div class="row2"><button class="btn ghost" id="openSet3" type="button">設定</button><button class="btn ghost" id="restart" type="button">重新開始</button></div>
+      <button class="btn ghost fsBtn" type="button">全螢幕</button>
       <div id="tyreSw" style="display:grid;gap:6px"><span class="note" id="tyreSwL" style="margin:0"></span><div class="seg" id="pauseTyre"><button type="button" data-v="S">軟胎</button><button type="button" data-v="M">中性胎</button><button type="button" data-v="H">硬胎</button></div></div>
       <div style="display:grid;gap:6px"><span class="note" style="margin:0">賽車線（也可按 L 切換）</span><div class="seg" id="pauseLine"><button type="button" data-v="full">完整顯示</button><button type="button" data-v="corner">僅限彎道</button><button type="button" data-v="off">關閉</button></div></div>
       <button class="btn ghost" id="lbOpen2" type="button" hidden>排行榜</button>
@@ -201,6 +210,15 @@
 </div>
 
 <!-- SETTINGS -->
+<div class="ov dim" id="fsHelp" hidden style="z-index:95">
+  <div class="res card">
+    <div class="eyebrow">全螢幕</div>
+    <h2>加入主畫面</h2>
+    <p class="note" style="font-size:13px">iPhone 的瀏覽器不允許網頁自己切換全螢幕。把遊戲加入主畫面後，從圖示開啟就會是沒有網址列的全螢幕。注意：主畫面版本的設定與排行榜和瀏覽器分開保存，可以先用「設定 → 設定備份」複製代碼，再到主畫面版本貼上匯入。</p>
+    <ol id="fsHelpSteps" style="color:var(--ink);font-size:14px;line-height:1.9;padding-left:1.3em;margin:10px 0 14px"></ol>
+    <button class="btn" id="fsHelpClose" type="button">知道了</button>
+  </div>
+</div>
 <div class="ov dim" id="settings" hidden>
   <div class="set card">
     <div class="topbar"><div class="eyebrow">設定 <span id="setStat" style="margin-left:10px;font-family:var(--f-mono);letter-spacing:0;color:var(--dim)"></span></div><button class="mini-btn" id="closeSet" type="button">完成</button></div>
@@ -234,6 +252,7 @@
 <script src="js/input.js"></script>
 <script src="js/graphics.js"></script>
 <script src="js/tutorial.js"></script>
+<script src="js/fullscreen.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
