@@ -13,7 +13,7 @@ const PHY={m:800,g:9.81,rho:1.225,mu:1.62,ClA_Z:3.4,ClA_X:2.1,CdA_Z:1.25,CdA_X:0
 // Ordered by difficulty. Geometry: bacinger/f1-circuits (MIT), projected to metres.
 const TRACKS=[
  {id:'park',name:'Grid Park',zh:'原創練習賽道',country:'虛構',km:4.14,turns:12,diff:1,hw:8,wall:30,run:17,theme:'green',desc:'兩段長直道加一個髮夾彎，用來熟悉換檔、直道模式與電池管理。'},
- {id:'at-1969',pit:-1,name:'Red Bull Ring',zh:'紅牛賽道',country:'奧地利 · 史匹堡',km:4.318,turns:10,diff:1,hw:8,wall:30,run:17,theme:'green',desc:'只有 10 個彎，三段長直道接重煞彎，最容易上手的正式賽道。'},
+ {id:'at-1969',pit:-1,hubWall:true,name:'Red Bull Ring',zh:'紅牛賽道',country:'奧地利 · 史匹堡',km:4.318,turns:10,diff:1,hw:8,wall:30,run:17,theme:'green',desc:'只有 10 個彎，三段長直道接重煞彎，最容易上手的正式賽道。'},
  {id:'it-1922',pit:-1,name:'Monza',zh:'蒙札',country:'義大利',km:5.793,turns:11,diff:2,hw:8,wall:28,run:16,theme:'park',desc:'速度神殿。長直道接減速彎，重點是煞車點和直道模式的時機。'},
  {id:'bh-2002',pit:-1,name:'Bahrain',zh:'巴林國際賽道',country:'巴林 · 薩基爾',km:5.412,turns:15,diff:2,hw:8.5,wall:30,run:18,theme:'desert',desc:'多個重煞髮夾彎，出彎加速與電量回收決定圈速。'},
  {id:'es-1991',pit:-1,name:'Barcelona-Catalunya',zh:'巴塞隆納－加泰隆尼亞',country:'西班牙 · 蒙梅洛',km:4.657,turns:14,diff:2,hw:8,wall:30,run:17,theme:'park',desc:'經典測試賽道。超長起跑直道接 T1–T2，T3 高速長右彎最吃下壓力與左前胎，T9 Campsa 是坡頂盲彎，最後兩個右彎全油門衝回直道。'},
@@ -24,7 +24,7 @@ const TRACKS=[
  {id:'hu-1986',pit:-1,name:'Hungaroring',zh:'匈牙利賽道',country:'匈牙利 · 布達佩斯',km:4.381,turns:14,diff:4,hw:7.5,wall:24,run:14,theme:'green',desc:'彎多直道少，幾乎沒有超車機會，排位就是一切。'},
  {id:'jp-1962',name:'Suzuka',zh:'鈴鹿',country:'日本',km:5.807,turns:18,diff:4,hw:7.5,wall:22,run:13,pit:-1,theme:'park',desc:'8 字形立體交叉，第一區的 S 字連續彎要一口氣串起來。'},
  {id:'es-2026',pit:-1,name:'Madring',zh:'馬德里環賽道',country:'西班牙 · 馬德里',km:5.474,turns:22,diff:4,hw:7.5,wall:18,run:9,theme:'city',bank:{a:0.41,b:0.49,deg:13.5},desc:'2026 年新加入的半街道賽道，穿過 IFEMA 展館區的連續技術彎，La Monumental 是路面帶傾斜角的長右彎，後段有連續重煞超車點。'},
- {id:'mc-1929',name:'Monaco',zh:'摩納哥',country:'摩納哥 · 蒙地卡羅',km:3.337,turns:19,diff:5,hw:5.5,wall:11.5,run:4,theme:'city',desc:'狹窄街道、全年最慢的髮夾彎，兩側都是護欄，沒有犯錯空間。'}
+ {id:'mc-1929',pit:-1,name:'Monaco',zh:'摩納哥',country:'摩納哥 · 蒙地卡羅',km:3.337,turns:19,diff:5,hw:5.5,wall:11.5,run:4,theme:'city',desc:'狹窄街道、全年最慢的髮夾彎，兩側都是護欄，沒有犯錯空間。'}
 ];
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -120,7 +120,9 @@ function loadTrackCore(def){
        let kmax=0;for(let q=0;q<len;q++)kmax=Math.max(kmax,Math.abs(KS[(i0+q)%N]));
        if(kmax>1/34&&len*DS>10){let hx=0,hz=0,hy=0,n=0;for(let q=0;q<len;q++){const i=(i0+q)%N,k=Math.abs(KS[i]);hy+=PY[i];if(k>0.6*kmax){const R=Math.min(1/k,60);hx+=PX[i]+NX[i]*sd*R;hz+=PZ[i]+NZ[i]*sd*R;n++}}
          hx/=n;hz/=n;hy/=len;let rmin=1e9;for(let q=0;q<len;q++){const i=(i0+q)%N;rmin=Math.min(rmin,Math.hypot(PX[i]-hx,PZ[i]-hz))}
-         if(rmin>HW+3.2){for(let q=0;q<len;q++){const i=(i0+q)%N;T[i]=1;W[i]=Math.max(HW+2.4,Math.hypot(PX[i]-hx,PZ[i]-hz)-0.6)}HUBS.push({x:hx,y:hy,z:hz,sd,i0,len})}}
+         if(rmin>HW+3.2&&def.hubWall){ // closed inner island: kerb straight onto a wall that follows the road, no infield surface at all
+           const wIn=HW+1.5,ramp=12;for(let q=-ramp;q<len+ramp;q++){const i=(i0+q+N)%N,t=q<0?(-q)/ramp:q>=len?(q-len+1)/ramp:0,f=t*t*(3-2*t);W[i]=Math.min(W[i],lerp(wIn,W[i],f))}}
+         else if(rmin>HW+3.2){for(let q=0;q<len;q++){const i=(i0+q)%N;T[i]=1;W[i]=Math.max(HW+2.4,Math.hypot(PX[i]-hx,PZ[i]-hz)-0.6)}HUBS.push({x:hx,y:hy,z:hz,sd,i0,len})}}
        c+=len-1}}
    let dep=5;{let ok=true;while(ok&&dep<12){for(let s0=T;s0<=len-T&&ok;s0+=DS*3)if(hitCorr(ix(s0),side,front+dep+1,1.5))ok=false;if(ok)dep+=1}}
    const PW=HW+1.5,L0=PW+0.7,fast=clamp((front-L0)*0.45,2.6,3.8),L1=L0+fast,W=side>0?WL:WR;
@@ -167,5 +169,5 @@ function buildProfile(team){const prof=new Float32Array(N);const mu=PHY.mu*team.
   return prof}
 
 const $=id=>document.getElementById(id);
-const VERSION='2.5.0';
+const VERSION='2.5.1';
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};

@@ -79,7 +79,7 @@ function buildTrackScene(def){
   // rubbered-in racing line
   G.add(new THREE.Mesh(ribbon(i=>LINE[i]-1.7,i=>LINE[i]+1.7,0.055,16,null,0,3),new THREE.MeshBasicMaterial({map:texRubber,transparent:true,depthWrite:false,side:DSIDE})));
   // dynamic racing line: one ribbon over the whole lap, only a window ahead of the car is given alpha each frame
-  {const g=ribbon(i=>LINE[i]-0.34,i=>LINE[i]+0.34,0.09,16);rlCol=new Float32Array((N+1)*8);g.setAttribute('color',new THREE.BufferAttribute(rlCol,4));
+  {const g=ribbon(i=>LINE[i]-0.34,i=>LINE[i]+0.34,0.09,16);rlCol=new Float32Array((N*RIB_SUB+1)*8);g.setAttribute('color',new THREE.BufferAttribute(rlCol,4));
    rlMesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:DSIDE,fog:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));rlMesh.renderOrder=3;rlMesh.frustumCulled=false;rlMesh.visible=false;rlI0=0;rlN=0;G.add(rlMesh)}
   const lineMat=new THREE.MeshBasicMaterial({color:0xf0f0f0,side:DSIDE});
   G.add(new THREE.Mesh(ribbon(()=>HW-0.45,()=>HW-0.2,0.065,10),lineMat));
