@@ -33,8 +33,10 @@ function showResults(){state='results';Object.assign(input,{thrK:0,brkK:0,left:0
   $('resBody').innerHTML=order.map((c,k)=>`<tr class="${c.me?'me':''}"><td>${k+1}</td><td>#${c.num} ${c.name}</td><td>${c.team.name}</td><td class="r">${k===0?fmt(c.estT):(c.lapsDown?'+'+c.lapsDown+' 圈':'+'+(c.estT-win).toFixed(3)+'s')}${c.finished?'':'*'}</td><td class="r">${fmt(c.best)}${fastest.car===c?' ◆':''}</td></tr>`).join('');
   screen('results')}
 function clearRace(){tutEnd();HUDS.forEach(h=>show(h,false));show('startl',false);cars.forEach(c=>disposeCar(c.model));cars=[];player=null;paused=false;applyTouchVisibility()}
-function toTeams(){clearRace();state='menu';ensureTrack();buildMenuCar();screen('menu')}
-function toTracks(){clearRace();state='tracks';if(menuCar){disposeCar(menuCar);menuCar=null}ensureTrack();renderTrackDetail();screen('trackScreen')}
+// phone step flow: 0 name, 1 team + car, 2 track, 3 leaderboard (see mobileflow.js)
+let mstep=0;
+function toTeams(){mstep=1;clearRace();state='menu';ensureTrack();buildMenuCar();screen('menu')}
+function toTracks(){mstep=2;revHold=false;previewT=0;clearRace();state='tracks';if(menuCar){disposeCar(menuCar);menuCar=null}ensureTrack();renderTrackDetail();screen('trackScreen')}
 
 /* ---- team select ---- */
 const teamsEl=$('teams');
@@ -51,7 +53,7 @@ function renderCtaSum(){const t=TEAMS[opts.team],el=$('ctaSum');if(el)el.innerHT
 function renderSetupSummary(){const S=settings.setup,A=settings.assist;$('setupSum').innerHTML=[['下壓力',(S.df>0?'+':'')+S.df],['齒比',{short:'短',std:'標準',long:'長'}[S.gearing]],['煞車平衡',S.bias+'% 前'],['電能模式',ERS_MODES[S.mode].n+' · '+ERS_MODES[S.mode].kw+' kW'],['變速箱',A.gearbox==='auto'?'自動':'手動'],['能量回收','×'+S.charge]].map(([l,v])=>`<div><span>${l}</span><b>${v}</b></div>`).join('')}
 // player name field on the team screen: saved as typed, shown everywhere through normalizePlayerName
 {const inp=$('pName');inp.value=ls.get('grid26.name')||'';const upd=()=>{ls.set('grid26.name',Array.from(inp.value).slice(0,16).join(''));renderCtaSum()};inp.addEventListener('input',upd);inp.addEventListener('blur',()=>{if(!inp.value.trim()){inp.value='';ls.set('grid26.name','')}renderCtaSum()})}
-$('goSetup').onclick=()=>{openSettings('menu');$('tab-setup').click()};
+$('goSetup').onclick=()=>{openSettings('menu');$('tab-setup').click()};$('goSetup2').onclick=()=>{openSettings('trackScreen');$('tab-setup').click()};
 function buildMenuCar(){if(menuCar)disposeCar(menuCar);const t=TEAMS[opts.team];menuCar=makeCar(t,t.nums[0]);const p=at(-40,0,{});menuCar.group.position.set(p.x,p.y,p.z);menuCar.group.rotation.y=p.h;menuCar.base=p;scene.add(menuCar.group)}
 
 /* ---- track select ---- */
@@ -76,7 +78,7 @@ function seg(id,key,parse,after){const el=$(id);[...el.children].forEach(b=>{b.s
 const DIFF_NOTE={0.88:'AI 約慢 12%，會早煞車、出彎保守。適合第一次上手。',0.92:'AI 約慢 8%。',0.95:'AI 約慢 5%，用自動變速也追得上。',0.975:'接近真實車隊差距，前段車隊略快於你。',0.99:'頂尖車隊幾乎跑到極限，需要穩定的煞車點。',1.005:'AI 跑在理論極限，需要善用直道模式與 Overtake。',1.02:'AI 超出一般極限，排位第 8 起跑幾乎要完美才拿得到領獎台。'};
 const renderDiff=()=>{$('diffNote').textContent=DIFF_NOTE[opts.diff]||'';ls.set('grid26.diff',opts.diff)};
 const ttKey=()=>'grid26.tt.'+TRACKS[opts.track].id;
-const renderMode=()=>{const tt=opts.mode==='tt';show('ttOpts',tt);show('raceOpts',!tt);const rec=parseFloat(ls.get(ttKey())),recBy=normalizePlayerName(ls.get(ttKey()+'.name'));$('ttNote').textContent=(opts.ttStart==='pit'?'從你的維修站出發，跑一圈暖胎圈，過起跑線開始計時。維修道限速 80 km/h。':'直接在起跑線前以比賽速度進場，過線就開始計時。')+(rec?' 這條賽道的紀錄：'+fmt(rec)+'（'+recBy+'）':' 這條賽道還沒有紀錄。');$('go').textContent=tt?'開始計時':'上場'};
+const renderMode=()=>{const tt=opts.mode==='tt';show('ttOpts',tt);show('raceOpts',!tt);const rec=parseFloat(ls.get(ttKey())),recBy=normalizePlayerName(ls.get(ttKey()+'.name'));$('trkBest').innerHTML=rec?`最佳單圈 <b>${fmt(rec)}</b> · ${escHTML(recBy)}`:'這條賽道還沒有最佳單圈';$('ttNote').textContent=(opts.ttStart==='pit'?'從你的維修站出發，跑一圈暖胎圈，過起跑線開始計時。維修道限速 80 km/h。':'直接在起跑線前以比賽速度進場，過線就開始計時。')+(rec?' 這條賽道的紀錄：'+fmt(rec)+'（'+recBy+'）':' 這條賽道還沒有紀錄。');$('go').textContent=tt?'開始計時':'上場'};
 seg('optMode','mode',String,renderMode);seg('optTT','ttStart',String,renderMode);
 seg('optLaps','laps',Number,renderTrackDetail);seg('optDiff','diff',Number,renderDiff);renderDiff();
 $('toTracks').onclick=toTracks;$('backTeams').onclick=toTeams;$('go').onclick=startRace;
@@ -118,8 +120,8 @@ function lbRender(){const cur=playerName(),all=lbFilter==='all',ids=all?TRACKS.m
   $('lbNote').textContent=all?(own.length?`共 ${own.length} 筆成績，依單圈時間排序（不同賽道的時間僅供參考）。亮框是「${cur}」的成績。`:'')
     :(own.length?`每條賽道保留最快 ${LB_KEEP} 筆成績，亮框是「${cur}」的成績${mineN?'':'（目前車手在這條賽道還沒有成績）'}${bench.length?'；灰色是基準成績':''}。`:bench.length?'還沒有成績。灰色是依這條賽道算出來的基準成績，跑一圈計時賽就會上榜。':'跑一圈計時賽就會上榜；選過這條賽道後也會列出基準成績。')}
 function showLB(){const sel=$('lbTrack');if(!sel.options.length){sel.innerHTML='<option value="all">全部賽道（總榜）</option>'+TRACKS.map(t=>`<option value="${t.id}">${escHTML(t.zh)} ${escHTML(t.name)}</option>`).join('');sel.onchange=()=>{lbFilter=sel.value;lbRender()}}
-  lbFilter=TRACKS[opts.track].id;sel.value=lbFilter;lbRender();show('lb',true)}
-$('lbOpen1').onclick=showLB;$('lbOpen2').onclick=showLB;$('lbClose').onclick=()=>show('lb',false);
+  lbFilter=TRACKS[opts.track].id;sel.value=lbFilter;lbRender();show('lb',true);if(state==='tracks')mstep=3}
+$('lbOpen1').onclick=showLB;$('lbOpen2').onclick=showLB;$('lbClose').onclick=()=>{show('lb',false);if(mstep===3)mstep=2};
 // settings code: everything in grid26.settings (assists, car setup, keys, touch layout) as one string
 const cfgCode=()=>'G26.'+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,assist:settings.assist,setup:settings.setup,keys:settings.keys,touchLayout:settings.touchLayout||null,touchLayoutM:settings.touchLayoutM||null,name:ls.get('grid26.name')||''}))));
 function cfgApply(txt){try{const o=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim().replace(/^G26\./,'')))));if(!o||typeof o!=='object'||!o.assist)throw 0;ls.set('grid26.settings',JSON.stringify({assist:o.assist,setup:o.setup||{},keys:o.keys||{},touchLayout:o.touchLayout||undefined,touchLayoutM:o.touchLayoutM||undefined}));if(typeof o.name==='string')ls.set('grid26.name',o.name.slice(0,16));return true}catch(e){return false}}
@@ -160,7 +162,7 @@ function renderSettings(){
      `<div class="srow"><div class="lbl">觸控轉向模式</div>${segHTML('sSteerMode',A.steerMode||'drag',[['drag','左右滑動'],['rotate','旋轉方向盤'],['buttons','左右按鍵']])}<p><b>左右滑動</b>：在左下的正方形內按住後左右拖，拖約半個框寬就轉到底。<b>旋轉方向盤</b>：繞著中心轉。<b>左右按鍵</b>：正方形分成 ◀ ▶ 兩半，按住轉向，可以直接滑到另一邊。三種都會套用方向盤重量和車速感應。</p></div>`+
      `<div class="srow"><div class="lbl">方向盤轉角（轉到底需要的角度）</div>${segHTML('sLock',A.wheelLock,[['90','90° 靈敏'],['120','120° 預設'],['180','180° 細膩']])}</div>`+
      `<div class="srow"><div class="lbl">觸控按鈕配置</div><button class="btn ghost" id="editTouch" type="button">調整按鈕與儀表位置、大小</button><p>進入配置模式後，可以把方向盤、踏板、離合器、每顆按鈕，以及儀表板、賽道地圖、輪胎狀態拖到順手的位置，並個別調整大小（滑桿可直接拖動，也可用 −／＋ 微調）。</p></div>`;
-    bindSeg('sGear',v=>A.gearbox=v);bindSeg('sLine',v=>A.line=v);bindSeg('sFps',v=>A.fps=+v);bindSeg('sMute',v=>{muted=v==='off';ls.set('grid26.mute',muted?'1':'0');if(!muted)startAudio()});$('sVol').oninput=e=>{A.vol=+e.target.value;$('volV').textContent=A.vol+'%';saveSettings()};bindSeg('sGfx',v=>{A.gfx=v;applyGfx()});bindSeg('sLock',v=>{A.wheelLock=+v;drawDz()});$('sDead').oninput=e=>{A.dead=+e.target.value;$('deadV').textContent=A.dead+'%';drawDz();saveSettings()};bindSeg('sAero',v=>A.aero=v);bindSeg('sRamp',v=>A.ramp=v==='on');bindSeg('sTouch',v=>A.touch=v);bindSeg('sSteerMode',v=>{A.steerMode=v;applySteerMode()});$('editTouch').onclick=openTouchEdit;
+    bindSeg('sGear',v=>A.gearbox=v);bindSeg('sLine',v=>A.line=v);bindSeg('sFps',v=>A.fps=+v);bindSeg('sMute',v=>setMuted(v==='off'));$('sVol').oninput=e=>{A.vol=+e.target.value;$('volV').textContent=A.vol+'%';saveSettings()};bindSeg('sGfx',v=>{A.gfx=v;applyGfx()});bindSeg('sLock',v=>{A.wheelLock=+v;drawDz()});$('sDead').oninput=e=>{A.dead=+e.target.value;$('deadV').textContent=A.dead+'%';drawDz();saveSettings()};bindSeg('sAero',v=>A.aero=v);bindSeg('sRamp',v=>A.ramp=v==='on');bindSeg('sTouch',v=>A.touch=v);bindSeg('sSteerMode',v=>{A.steerMode=v;applySteerMode()});$('editTouch').onclick=openTouchEdit;
     $('sWgt').oninput=e=>{A.weight=+e.target.value;$('wgtV').textContent=A.weight.toFixed(2)+'×';saveSettings()};
     $('sSteer').oninput=e=>{A.steer=+e.target.value;$('steerV').textContent=A.steer.toFixed(2)+'×';saveSettings()};
   }else if(curTab==='aids'){const A=settings.assist;

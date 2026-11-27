@@ -16,7 +16,7 @@ addEventListener('keydown',e=>{
   if(act==='aero')xPress=true;else if(act==='shiftUp'){if(settings.assist.gearbox==='manual')shiftReq=1;else toast('自動變速中 · 到設定切換手動')}else if(act==='shiftDown'){if(settings.assist.gearbox==='manual')shiftReq=-1}
   else if(act==='ersUp')cycleMode(1);else if(act==='ersDown')cycleMode(-1);else if(act==='overtake')toggleOT();
   else if(act==='camera')cycleCam();else if(act==='line')cycleLine();else if(act==='reset'&&raceT>0)resetPlayer();
-  else if(act==='mute'){muted=!muted;ls.set('grid26.mute',muted?'1':'0');if(!muted)startAudio();toast(muted?'引擎聲 關':'引擎聲 開')}
+  else if(act==='mute'){setMuted(!muted);toast(muted?'引擎聲 關':'引擎聲 開')}
   else if(act==='pause'){releasePads();paused=!paused;screen(paused?'pause':null);if(paused)ttSwitchRender()}},true);
 addEventListener('keyup',e=>{const act=KEYMAP[e.code];if(act==='aero'||act==='overtake')input.clutchK=0;if(act==='throttle')input.thrK=0;else if(act==='brake')input.brkK=0;else if(act==='left')input.left=0;else if(act==='right')input.right=0;else if(act==='overtake')input.ot=0});
 addEventListener('blur',()=>{Object.assign(input,{thrK:0,brkK:0,left:0,right:0,ot:0});if(state==='race'&&raceT>0&&!paused){paused=true;screen('pause')}});
