@@ -98,6 +98,7 @@
       <h1>GRID <span>2026</span></h1>
       <p class="lede">車體依 2026 年技術規則建模：軸距 3.4 公尺、車寬 1.9 公尺、最低重量 768 公斤，前後翼可在彎道與直道模式間切換。五支車隊的性能分布，依今年車隊積分榜前五名換算。</p>
       <label class="driverRow glass"><span class="dl">車手名稱</span><input id="pName" type="text" maxlength="16" placeholder="玩家1" autocomplete="off" spellcheck="false" enterkeyhint="done"><span class="dh">空白時顯示為「玩家1」，最多 16 字</span></label>
+      <div class="mTeam glass" id="mTeam" aria-live="polite"></div>
       <div class="teams" id="teams"></div>
     </div>
     <div class="side">
@@ -204,8 +205,8 @@
   <div class="res card">
     <div class="eyebrow">第一次上場？</div>
     <h2>要跑新手教學嗎？</h2>
-    <p class="lede" style="margin:0">大約 3 分鐘，在練習賽道上一步一步帶你操作，場上只有你一台車。</p>
-    <ul><li>油門、煞車、轉向、換檔與視角</li><li>看懂儀表：轉速、檔位、電池電量</li><li>2026 規則：直道模式、電能部署、Overtake</li><li>起跑、賽道界線與維修區</li></ul>
+    <p class="lede" style="margin:0">約 3 分鐘，練習賽道上只有你一台車。</p>
+    <ul><li>油門、煞車、轉向、換檔、視角</li><li>儀表：轉速、檔位、電量</li><li>2026 規則：直道模式、電能、OT</li></ul>
     <div style="display:grid;gap:10px;margin-top:16px">
       <button class="btn" id="tutYes" type="button">開始教學</button>
       <button class="btn ghost" id="tutNo" type="button">不用，直接選車</button>

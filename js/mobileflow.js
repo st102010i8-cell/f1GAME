@@ -4,12 +4,15 @@
 // 0 driver name · 1 team + 3D car + engine sound · 2 track (setup shortcut, best lap) · 3 leaderboard → start.
 // Desktop / tablet layout is untouched: none of this applies without body.compact.
 let menuYaw=0,menuDragT=-1e9,mflowSig='';
-const mflowOn=()=>document.body.classList.contains('compact')&&(state==='menu'||state==='tracks')&&$('settings').hidden&&!touchEdit&&$('fsHelp').hidden;
+const mflowOn=()=>document.body.classList.contains('compact')&&(state==='menu'||state==='tracks')&&!touchEdit;
+// any dialog on top (tutorial prompt, settings, fullscreen help, leaderboard outside its own step) hides the step bar,
+// so there is never a second main button competing with the dialog's own buttons
+const mflowModal=()=>!$('settings').hidden||!$('fsHelp').hidden||!$('tutAsk').hidden||(!$('lb').hidden&&mstep!==3);
 const MF_EYE=[['#menu .topbar .eyebrow','步驟 1 / 4 · 車手名稱','步驟 2 / 4 · 選擇車隊'],['#trackScreen .topbar .eyebrow','步驟 3 / 4 · 選擇賽道'],['#lb .eyebrow','步驟 4 / 4 · 計時賽排行榜']];
 function mflowEyebrows(on){MF_EYE.forEach(([sel,...txt])=>{const el=document.querySelector(sel);if(!el)return;if(el.dataset.orig==null)el.dataset.orig=el.textContent;
   el.textContent=!on?el.dataset.orig:sel.startsWith('#menu')?txt[mstep===0?0:1]:sel.startsWith('#lb')&&mstep!==3?el.dataset.orig:txt[0]})}
-function mflowTick(){const on=mflowOn(),step=on?mstep:-1,go=$('go').textContent,sig=on+'|'+step+'|'+go;if(sig===mflowSig)return;mflowSig=sig;
-  document.body.classList.toggle('mflow',on);document.body.dataset.mstep=on?String(mstep):'';show('mNav',on);mflowEyebrows(on);if(!on)return;
+function mflowTick(){const on=mflowOn(),modal=on&&mflowModal(),step=on?mstep:-1,go=$('go').textContent,sig=on+'|'+modal+'|'+step+'|'+go;if(sig===mflowSig)return;mflowSig=sig;
+  document.body.classList.toggle('mflow',on);document.body.classList.toggle('mmodal',modal);document.body.dataset.mstep=on?String(mstep):'';show('mNav',on&&!modal);mflowEyebrows(on);if(!on)return;
   const L=[['',`下一步 · 選車隊`],['上一步','下一步 · 選賽道'],['上一步 · 車隊','下一步 · 排行榜'],['上一步 · 賽道',go]][mstep]||['',''];
   $('mPrev').textContent=L[0];$('mPrev').style.visibility=L[0]?'visible':'hidden';$('mNext').textContent=L[1];
   [...$('mDots').children].forEach((d,k)=>d.classList.toggle('on',k===mstep));

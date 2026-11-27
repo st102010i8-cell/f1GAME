@@ -428,7 +428,6 @@ body.compact .driverRow .dh{display:none}
 .mDots{display:flex;gap:6px;flex:none}
 .mDots i{width:7px;height:7px;border-radius:50%;background:#3a4757}
 .mDots i.on{background:var(--signal);width:18px;border-radius:4px}
-body.mflow .ov{padding-bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 70px)}
 /* step 0: driver name only */
 body.mflow[data-mstep="0"] #menu .teams,body.mflow[data-mstep="0"] #menu .side{display:none}
 body.mflow[data-mstep="0"] #menu .menuSheet{grid-template-columns:1fr;max-width:560px;margin:auto}
@@ -436,29 +435,102 @@ body.mflow[data-mstep="0"] #menu .driverRow{padding:14px}
 body.mflow[data-mstep="0"] #menu .driverRow input{font-size:18px;padding:11px 12px}
 body.mflow[data-mstep="0"] #menu .driverRow .dh{display:block;grid-column:1 / -1}
 /* step 1: team list on the left, the 3D car framed in the free right side, engine buttons under it */
-body.mflow[data-mstep="1"] #menu{pointer-events:none;background:linear-gradient(90deg,rgba(11,16,22,.94) 0,rgba(11,16,22,.85) 44%,rgba(11,16,22,0) 60%)}
-body.mflow[data-mstep="1"] #menu .menuSheet{display:block;margin:0}
-body.mflow[data-mstep="1"] #menu .menuMain{pointer-events:auto;width:min(46vw,440px)}
-body.mflow[data-mstep="1"] #menu h1,body.mflow[data-mstep="1"] #menu .lede,body.mflow[data-mstep="1"] #menu .driverRow{display:none}
-body.mflow[data-mstep="1"] #menu .topbar .tools{display:none}
-body.mflow[data-mstep="1"] #menu .team{grid-template-columns:34px minmax(0,1fr) auto;gap:9px;padding:8px 10px 8px 13px}
-body.mflow[data-mstep="1"] #menu .team .sw{width:34px;height:24px}
-body.mflow[data-mstep="1"] #menu .team .tn{font-size:16px}
-body.mflow[data-mstep="1"] #menu .team .tm{font-size:11px}
-body.mflow[data-mstep="1"] #menu .team .tp{font-size:10.5px}
-body.mflow[data-mstep="1"] #menu .team .tp b{font-size:13px}
-body.mflow[data-mstep="1"] #menu .side > .card,body.mflow[data-mstep="1"] #menu .cta{display:none}
-body.mflow[data-mstep="1"] #carCtl{pointer-events:auto;position:fixed;z-index:5;right:max(10px,env(safe-area-inset-right,0px));bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 66px);width:auto;max-width:48vw}
-body.mflow[data-mstep="1"] .carHint{display:block;width:100%}
 /* step 2: track page; the bottom bar replaces the "change team" button */
 body.mflow #backTeams{display:none}
 /* step 3: leaderboard as its own page */
 body.mflow[data-mstep="3"] #lbClose{display:none}
 body.mflow[data-mstep="3"] #lb{background:rgba(11,16,22,.96)}
-/* portrait phones: car in the top part of the screen, team list underneath, engine buttons in the top right */
-@media (orientation:portrait){
-  body.mflow[data-mstep="1"] #menu{background:linear-gradient(180deg,rgba(11,16,22,0) 0,rgba(11,16,22,0) 34%,rgba(11,16,22,.9) 46%,rgba(11,16,22,.95) 100%)}
-  body.mflow[data-mstep="1"] #menu .menuMain{width:100%;margin-top:40vh}
-  body.mflow[data-mstep="1"] #menu .topbar{position:fixed;top:var(--st);left:var(--sl)}
-  body.mflow[data-mstep="1"] #carCtl{top:calc(var(--st) + 44px);bottom:auto;max-width:62vw}
+
+/* ================= v2.8 phone layouts ================= */
+body.compact{--navH:calc(54px + max(6px,env(safe-area-inset-bottom,0px)))}
+#mNav{padding-top:6px;padding-bottom:max(6px,env(safe-area-inset-bottom,0px))}
+#mNav .btn{min-height:42px;font-size:15px;padding:7px 10px}
+#mNav .btn.ghost{font-size:13px}
+body.mflow .ov{padding-bottom:calc(var(--navH) + 6px)}
+body.mmodal .ov.dim{padding-bottom:var(--sb)}
+/* dialogs on phones are opaque, so nothing of the page underneath shows through */
+body.compact .ov.dim{background:rgba(8,12,17,.97)}
+#mTeam{display:none}
+/* --- car page: info card top left, engine controls top right, car in the middle, team strip above the bar --- */
+body.mflow[data-mstep="1"] #menu{pointer-events:none;overflow:hidden;background:linear-gradient(180deg,rgba(11,16,22,.78) 0,rgba(11,16,22,0) 26%,rgba(11,16,22,0) 60%,rgba(11,16,22,.86) 100%)}
+body.mflow[data-mstep="1"] #menu .menuSheet{display:block;margin:0}
+body.mflow[data-mstep="1"] #menu h1,body.mflow[data-mstep="1"] #menu .lede,body.mflow[data-mstep="1"] #menu .driverRow,body.mflow[data-mstep="1"] #menu .side > .card,body.mflow[data-mstep="1"] #menu .cta,body.mflow[data-mstep="1"] #menu .topbar .tools{display:none}
+body.mflow[data-mstep="1"] #menu .topbar{position:fixed;top:var(--st);left:var(--sl);margin:0}
+body.mflow[data-mstep="1"] #mTeam{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;position:fixed;top:calc(var(--st) + 22px);left:var(--sl);width:min(330px,calc(100vw - var(--sl) - var(--sr)));padding:8px 12px;border-radius:10px;pointer-events:auto}
+#mTeam .mtn{font:700 16px var(--f-display);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mTeam .mtn span{color:var(--signal);font-family:var(--f-mono);font-size:13px}
+#mTeam .mtm{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mTeam .mtp{font:600 10px var(--f-mono);color:var(--dim);text-align:right}
+#mTeam .mtp b{display:block;font-size:13px;color:var(--ink)}
+body.mflow[data-mstep="1"] #carCtl{pointer-events:auto;position:fixed;z-index:5;top:calc(var(--st) + 22px);right:var(--sr);bottom:auto;width:auto;max-width:44vw;padding:7px 9px;gap:6px}
+body.mflow[data-mstep="1"] #carCtl .mini-btn{min-height:32px;font-size:12px;padding:4px 10px}
+body.mflow[data-mstep="1"] .carHint{display:block;width:100%;font-size:10px}
+body.mflow[data-mstep="1"] #menu .teams{pointer-events:auto;position:fixed;left:var(--sl);right:var(--sr);bottom:calc(var(--navH) + 4px);display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:3px 2px 5px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;touch-action:pan-x;scrollbar-width:none}
+body.mflow[data-mstep="1"] #menu .teams::-webkit-scrollbar{display:none}
+body.mflow[data-mstep="1"] #menu .team{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:42px;padding:6px 12px 6px 13px;scroll-snap-align:start}
+body.mflow[data-mstep="1"] #menu .team .sw{width:24px;height:17px}
+body.mflow[data-mstep="1"] #menu .team .tn{font-size:14px;white-space:nowrap}
+body.mflow[data-mstep="1"] #menu .team .tm,body.mflow[data-mstep="1"] #menu .team .tp{display:none}
+@media (orientation:portrait){body.mflow[data-mstep="1"] #carCtl{top:calc(var(--st) + 86px);left:var(--sl);right:auto;max-width:calc(100vw - var(--sl) - var(--sr))}}
+/* --- track page: list and details each scroll on their own, sized to the space above the bar --- */
+body.mflow[data-mstep="2"] #trackScreen{overflow:hidden;padding-bottom:0}
+body.mflow[data-mstep="2"] #trackScreen .sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:10px;width:100%;margin:0;align-items:stretch;height:calc(100vh - var(--st) - var(--navH) - 4px);height:calc(100dvh - var(--st) - var(--navH) - 4px)}
+body.mflow[data-mstep="2"] #trackScreen .sheet > div{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+body.mflow[data-mstep="2"] #trackScreen h2:not(#tdName),body.mflow[data-mstep="2"] #trackScreen .lede,body.mflow[data-mstep="2"] #trackScreen .side > .row2{display:none}
+body.mflow[data-mstep="2"] .trks{grid-template-columns:1fr;gap:6px;max-height:none;overflow:visible;padding-right:0}
+body.mflow[data-mstep="2"] .trk{grid-template-columns:50px minmax(0,1fr);gap:8px;padding:5px 9px}
+body.mflow[data-mstep="2"] .trk canvas{width:50px;height:38px}
+body.mflow[data-mstep="2"] .trk .n{font-size:14px}
+body.mflow[data-mstep="2"] .trk .c{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.mflow[data-mstep="2"] .trk .m{margin-top:1px;font-size:10px}
+body.mflow[data-mstep="2"] #trackScreen .card{padding:9px 11px}
+body.mflow[data-mstep="2"] #trkBig{width:auto;max-width:100%;height:26vh;height:26dvh;margin:0 auto 6px}
+body.mflow[data-mstep="2"] #tdName{font-size:21px;margin:0}
+body.mflow[data-mstep="2"] #tdDesc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:4px 0 6px!important;font-size:11px}
+body.mflow[data-mstep="2"] #tdSpec{font-size:11px;gap:2px 10px}
+body.mflow[data-mstep="2"] #tdSpec b{font-size:12px}
+@media (orientation:portrait){body.mflow[data-mstep="2"] #trackScreen .sheet{grid-template-columns:1fr;grid-template-rows:minmax(0,.85fr) minmax(0,1.15fr)}}
+/* --- denser menus and settings on phones --- */
+body.compact .card{padding:11px 13px}
+body.compact h2{font-size:26px}
+body.compact .seg button{padding:5px 5px;font-size:12px;min-width:44px}
+body.compact .optl{margin:8px 0 4px;font-size:11px}
+body.compact .note{font-size:10.5px}
+body.compact .btn{font-size:17px;padding:9px 14px}
+body.compact .btn.ghost{font-size:14px}
+body.compact .mini-btn{padding:5px 10px;font-size:12px}
+body.compact .tab{padding:6px 10px;font-size:13px}
+body.compact .srow{padding:7px 0}
+body.compact .srow .lbl{font-size:13px;margin-bottom:4px}
+body.compact .srow p{font-size:11px;margin-top:4px;line-height:1.45}
+body.compact .krow{font-size:12.5px;padding:3px 0;grid-template-columns:minmax(0,1fr) 92px 92px}
+body.compact .keyb{min-height:26px;padding:4px}
+body.compact #tutAsk h2{font-size:24px;margin:4px 0 6px}
+body.compact #tutAsk ul{font-size:12.5px;line-height:1.6;margin-top:6px}
+body.compact #tutAsk .btn{padding:8px 12px}
+/* --- phone touch controls about 18% smaller and lighter by default (a saved custom layout still wins) --- */
+body.compact{--wh:min(31vh,140px);--thrW:72px;--brkW:78px;--gapP:9px}
+body.compact #touch > .tc{background:rgba(232,237,243,.05);border-color:rgba(232,237,243,.15);font-size:12px}
+body.compact #touch > #tWheel{border-color:rgba(232,237,243,.28)}
+body.compact #touch > #tThr{height:42vh}
+body.compact #touch > #tBrake{height:33vh}
+body.compact #touch > #tX,body.compact #touch > #tOT{width:38px;height:36px;border-radius:18px;bottom:calc(var(--sb) + 33vh + 12px)}
+body.compact #touch > #tX{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 42px)}
+body.compact #touch > #tUp,body.compact #touch > #tDn{width:44px;height:36px;border-radius:18px;bottom:calc(var(--sb) + 33vh + 12px)}
+body.compact #touch > #tDn{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 84px)}
+body.compact #touch > #tUp{right:calc(var(--sr) + var(--thrW) + var(--gapP) + 132px)}
+body.compact #touch > #tMode{width:120px;height:28px}
+body.compact #touch > #tCam{width:42px;height:26px;font-size:11px}
+body.compact #touch > #tClutch{width:80px;height:40px}
+@media (max-height:340px){
+  body.compact{--wh:min(34vh,118px);--thrW:66px;--brkW:66px;--gapP:7px}
+  body.compact #touch > #tThr{height:calc(100vh - var(--st) - var(--sb) - 104px)}
+  body.compact #touch > #tBrake{height:calc(100vh - var(--st) - var(--sb) - 122px)}
+  body.compact #touch > #tX,body.compact #touch > #tOT,body.compact #touch > #tUp,body.compact #touch > #tDn{width:38px;height:34px;border-radius:17px}
+  body.compact #touch > #tOT{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP));bottom:var(--sb)}
+  body.compact #touch > #tX{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP));bottom:calc(var(--sb) + 40px)}
+  body.compact #touch > #tDn{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP) + 42px);bottom:var(--sb)}
+  body.compact #touch > #tUp{right:calc(var(--sr) + var(--thrW) + var(--brkW) + 2 * var(--gapP) + 42px);bottom:calc(var(--sb) + 40px)}
+  body.compact #touch > #tMode{width:120px;height:24px}
+  body.compact #touch > #tClutch{width:70px;height:38px}
 }
