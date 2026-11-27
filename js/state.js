@@ -18,7 +18,7 @@ function spawnCars(){
   const gl=Math.min(3,HW-2);
   order.forEach((o,gp)=>{const t=TEAMS[o.ti];const model=makeCar(t,t.nums[o.k]);scene.add(model.group);
     const isMe=o===me;const s0=-15-gp*8,d0=gp%2?-gl:gl;const p=at(s0,d0,{});
-    const c={team:t,ti:o.ti,num:t.nums[o.k],name:isMe?'你':t.drivers[o.k],code:isMe?'YOU':t.code,me:isMe,model,
+    const c={team:t,ti:o.ti,num:t.nums[o.k],name:isMe?playerName():t.drivers[o.k],code:isMe?playerName():t.code,me:isMe,model,
       x:p.x,y:p.y,z:p.z,h:p.h,v:0,s:wrapS(s0),d:d0,idx:p.i,laps:-1,lapStart:0,lapTimes:[],best:Infinity,secT:[0,0,0],pbS:[Infinity,Infinity,Infinity],secStart:0,secCol:['idle','idle','idle'],
       finished:false,finishT:0,hist:new Map(),aero:0,xmode:false,steer:0,yaw:0,soc:PHY.batt,wear:0,ersP:0,otAvail:false,otActive:false,otZone:-1,lrpm:4000,launchPend:false,lTr:1,lPw:1,lT:0,lDist:0,lSpin:0,penalty:0,
       gear:1,rpm:4000,shiftCut:0,skill:clamp(t.pace*opts.diff+(o.k?-0.006:0),0.8,1.012),lane:0,laneT:0,offT:0,wheelRot:0,lastPos:0};
@@ -43,7 +43,7 @@ function crossLine(c){c.laps++;
     if(lt<c.best){c.best=lt;if(c.me&&c.laps>1)radio(`個人最快圈 ${fmt(lt)}`,'pb',2)}
     if(lt<fastest.t){fastest={t:lt,car:c};if(c.me)radio(`全場最快圈！${fmt(lt)}`,'fl',2)}
     const leaderDone=cars.some(o=>o.finished);
-    if(opts.mode==='tt'&&!tut){const rec=parseFloat(ls.get(ttKey()));if(!(rec<=lt)){ls.set(ttKey(),lt.toFixed(3));radio(`賽道新紀錄 ${fmt(lt)}`,'rec',1)}if(c.me){const k=lbAdd(lt,c);if(k===0)toast('NEW PB · '+fmt(lt));else if(k>0)toast('排行榜第 '+(k+1)+' 筆個人成績 · '+fmt(lt))}}
+    if(opts.mode==='tt'&&!tut){const rec=parseFloat(ls.get(ttKey()));if(!(rec<=lt)){ls.set(ttKey(),lt.toFixed(3));ls.set(ttKey()+'.name',playerName());radio(`賽道新紀錄 ${fmt(lt)} · ${playerName()}`,'rec',1)}if(c.me){const k=lbAdd(lt,c);if(k===0)toast('NEW PB · '+playerName()+' · '+fmt(lt));else if(k>0)toast(playerName()+' · 這條賽道第 '+(k+1)+' 快 · '+fmt(lt))}}
     else if(c.laps>=opts.laps||leaderDone){c.finished=true;c.finishT=raceT+c.penalty;if(c.me)endRaceSoon()}
     else if(c.me&&c.laps===opts.laps-1)radio('最後一圈，全力推進！','final',1);
     c.secStart=raceT;if(c.me){c.secCol[0]='idle';c.secCol[1]='idle'}}}

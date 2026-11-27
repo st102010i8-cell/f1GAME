@@ -5,6 +5,7 @@ addEventListener('keydown',e=>{
   if(capture){e.preventDefault();e.stopPropagation();if(e.code==='Escape'){capture=null;renderSettings();return}
     const {a,sl}=capture;if(e.code==='Backspace'){settings.keys[a][sl]=null}else{Object.keys(settings.keys).forEach(k=>settings.keys[k]=settings.keys[k].map(c=>c===e.code?null:c));settings.keys[a][sl]=e.code}
     capture=null;saveSettings();renderSettings();return}
+  if(e.target&&e.target.closest&&e.target.closest('input,textarea,select'))return; // typing in a field
   if(!$('settings').hidden){if(e.code==='Escape')closeSettings();return}
   if(KEYMAP[e.code]==='fullscreen'){e.preventDefault();if(!e.repeat)toggleFullscreen();return} // works in menus too
   if(state!=='race')return;if(tut&&tut.frz&&!paused&&e.code==='Enter'){e.preventDefault();if(!e.repeat)tutNext();return}

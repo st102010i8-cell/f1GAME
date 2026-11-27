@@ -39,14 +39,19 @@ function toTracks(){clearRace();state='tracks';if(menuCar){disposeCar(menuCar);m
 /* ---- team select ---- */
 const teamsEl=$('teams');
 TEAMS.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.className='team';b.id='team-'+t.code;b.setAttribute('aria-pressed',String(i===opts.team));
-  b.innerHTML=`<span class="sw" style="background:${t.base}"><i style="background:${t.acc}"></i></span><span><div class="tn">${t.name}</div><div class="tm">${t.tilt}</div></span><span class="tp">對應積分 P${t.rank}<b>${t.pts} 分</b></span>`;
+  b.style.setProperty('--tc',t.base);b.innerHTML=`<span class="sw" style="background:${t.base}"><i style="background:${t.acc}"></i></span><span><div class="tn">${t.name}</div><div class="tm">${t.tilt}</div></span><span class="tp">對應積分 P${t.rank}<b>${t.pts} 分</b></span>`;
   b.onclick=()=>{opts.team=i;[...teamsEl.children].forEach((e,k)=>e.setAttribute('aria-pressed',String(k===i)));renderStats();buildMenuCar();previewVoice();toast('引擎聲：'+VOICE_NOTE[i])};teamsEl.appendChild(b)});
-function renderStats(){const t=TEAMS[opts.team];$('selName').textContent=t.name+' · #'+t.nums[0];
+function renderStats(){const t=TEAMS[opts.team];$('selName').textContent=t.name.toUpperCase()+' · #'+t.nums[0];
+  $('selSw').style.background=`linear-gradient(180deg,${t.base} 0 62%,${t.acc} 62% 100%)`;
   const pw=Math.round(t.power*1000-900),gr=Math.round(t.grip*1000-900),ov=Math.round(t.pace*1000-860);
-  $('stats').innerHTML=[['動力',pw,100],['下壓力',gr,100],['綜合',ov,112]].map(([n,v,mx])=>`<div class="stat">${n}<div class="t"><div class="f" style="width:${v/mx*100}%"></div></div><span class="v">${v}</span></div>`).join('')+
-   `<div class="spec" style="margin-top:12px"><div>軸距<b>3,400 mm</b></div><div>車寬<b>1,900 mm</b></div><div>最低重量<b>768 kg</b></div><div>動力<b>400 kW + 350 kW</b></div><div>變速箱<b>8 速</b></div><div>電池可用<b>4.0 MJ</b></div></div>`;
-  $('selNote').textContent=`對應 2026 車隊積分榜第 ${t.rank} 名（${t.pts} 分，巴西站後）。動力與下壓力的取捨是遊戲平衡設定。`}
-function renderSetupSummary(){const S=settings.setup,A=settings.assist;$('setupSum').innerHTML=`<div>下壓力<b>${S.df>0?'+':''}${S.df}</b></div><div>齒比<b>${{short:'短',std:'標準',long:'長'}[S.gearing]}</b></div><div>煞車平衡<b>${S.bias}% 前</b></div><div>電能模式<b>${ERS_MODES[S.mode].n} · ${ERS_MODES[S.mode].kw} kW</b></div><div>變速箱<b>${A.gearbox==='auto'?'自動':'手動'}</b></div><div>能量回收<b>×${S.charge}</b></div>`}
+  $('stats').innerHTML=[['動力',pw,100],['下壓力',gr,100],['綜合',ov,112]].map(([n,v,mx])=>`<div class="stat"><span class="sl">${n}</span><div class="t"><div class="f" style="width:${v/mx*100}%"></div></div><span class="v">${v}<i>/${mx}</i></span></div>`).join('')+
+   `<div class="kvgrid" style="margin-top:12px">${[['軸距','3,400','mm'],['車寬','1,900','mm'],['最低重量','768','kg'],['動力','400 + 350','kW'],['變速箱','8','速'],['電池可用','4.0','MJ']].map(([l,v,u])=>`<div><span>${l}</span><b>${v}<i>${u}</i></b></div>`).join('')}</div>`;
+  $('selNote').textContent=`對應 2026 車隊積分榜第 ${t.rank} 名（${t.pts} 分，巴西站後）。動力與下壓力的取捨是遊戲平衡設定。`;renderCtaSum()}
+function renderCtaSum(){const t=TEAMS[opts.team],el=$('ctaSum');if(el)el.innerHTML=`已選 <b>${escHTML(t.name)} #${t.nums[0]}</b> · 車手 <b>${escHTML(playerName())}</b>`}
+function renderSetupSummary(){const S=settings.setup,A=settings.assist;$('setupSum').innerHTML=[['下壓力',(S.df>0?'+':'')+S.df],['齒比',{short:'短',std:'標準',long:'長'}[S.gearing]],['煞車平衡',S.bias+'% 前'],['電能模式',ERS_MODES[S.mode].n+' · '+ERS_MODES[S.mode].kw+' kW'],['變速箱',A.gearbox==='auto'?'自動':'手動'],['能量回收','×'+S.charge]].map(([l,v])=>`<div><span>${l}</span><b>${v}</b></div>`).join('')}
+// player name field on the team screen: saved as typed, shown everywhere through normalizePlayerName
+{const inp=$('pName');inp.value=ls.get('grid26.name')||'';const upd=()=>{ls.set('grid26.name',Array.from(inp.value).slice(0,16).join(''));renderCtaSum()};inp.addEventListener('input',upd);inp.addEventListener('blur',()=>{if(!inp.value.trim()){inp.value='';ls.set('grid26.name','')}renderCtaSum()})}
+$('goSetup').onclick=()=>{openSettings('menu');$('tab-setup').click()};
 function buildMenuCar(){if(menuCar)disposeCar(menuCar);const t=TEAMS[opts.team];menuCar=makeCar(t,t.nums[0]);const p=at(-40,0,{});menuCar.group.position.set(p.x,p.y,p.z);menuCar.group.rotation.y=p.h;menuCar.base=p;scene.add(menuCar.group)}
 
 /* ---- track select ---- */
@@ -71,7 +76,7 @@ function seg(id,key,parse,after){const el=$(id);[...el.children].forEach(b=>{b.s
 const DIFF_NOTE={0.88:'AI 約慢 12%，會早煞車、出彎保守。適合第一次上手。',0.92:'AI 約慢 8%。',0.95:'AI 約慢 5%，用自動變速也追得上。',0.975:'接近真實車隊差距，前段車隊略快於你。',0.99:'頂尖車隊幾乎跑到極限，需要穩定的煞車點。',1.005:'AI 跑在理論極限，需要善用直道模式與 Overtake。',1.02:'AI 超出一般極限，排位第 8 起跑幾乎要完美才拿得到領獎台。'};
 const renderDiff=()=>{$('diffNote').textContent=DIFF_NOTE[opts.diff]||'';ls.set('grid26.diff',opts.diff)};
 const ttKey=()=>'grid26.tt.'+TRACKS[opts.track].id;
-const renderMode=()=>{const tt=opts.mode==='tt';show('ttOpts',tt);show('raceOpts',!tt);const rec=parseFloat(ls.get(ttKey()));$('ttNote').textContent=(opts.ttStart==='pit'?'從你的維修站出發，跑一圈暖胎圈，過起跑線開始計時。維修道限速 80 km/h。':'直接在起跑線前以比賽速度進場，過線就開始計時。')+(rec?' 這條賽道的紀錄：'+fmt(rec):' 這條賽道還沒有紀錄。');$('go').textContent=tt?'開始計時':'上場'};
+const renderMode=()=>{const tt=opts.mode==='tt';show('ttOpts',tt);show('raceOpts',!tt);const rec=parseFloat(ls.get(ttKey())),recBy=normalizePlayerName(ls.get(ttKey()+'.name'));$('ttNote').textContent=(opts.ttStart==='pit'?'從你的維修站出發，跑一圈暖胎圈，過起跑線開始計時。維修道限速 80 km/h。':'直接在起跑線前以比賽速度進場，過線就開始計時。')+(rec?' 這條賽道的紀錄：'+fmt(rec)+'（'+recBy+'）':' 這條賽道還沒有紀錄。');$('go').textContent=tt?'開始計時':'上場'};
 seg('optMode','mode',String,renderMode);seg('optTT','ttStart',String,renderMode);
 seg('optLaps','laps',Number,renderTrackDetail);seg('optDiff','diff',Number,renderDiff);renderDiff();
 $('toTracks').onclick=toTracks;$('backTeams').onclick=toTeams;$('go').onclick=startRace;
@@ -83,22 +88,41 @@ function renderTyrePick(){const S=settings.setup;[...$('optTyre').children].forE
   $('tyreSwL').textContent=opts.mode==='tt'?'輪胎（計時賽：立刻換上一組新胎）':'下次進站要換上的輪胎';show('tyreSw',!tut);$('tyreSw').style.display=tut?'none':'grid';show('lbOpen2',opts.mode==='tt'&&!tut)}
 [...$('optTyre').children].forEach(b=>b.onclick=()=>{settings.setup.tyre=settings.setup.pitTyre=b.dataset.v;saveSettings();renderTyrePick()});
 [...$('pauseTyre').children].forEach(b=>b.onclick=()=>{const S=settings.setup;S.pitTyre=b.dataset.v;if(opts.mode==='tt'&&player){S.tyre=b.dataset.v;player.tyre=newTyres(b.dataset.v);player.wear=0;toast('換上新的'+TYRES[b.dataset.v].n)}saveSettings();renderTyrePick()});
-// time-trial leaderboard: your five best laps per track, plus four reference laps derived from the track's own speed profile
-let lbNew=0;
-const lbLoad=id=>{try{const a=JSON.parse(ls.get('grid26.lb.'+id)||'[]');return Array.isArray(a)?a.filter(e=>e&&isFinite(e.t)):[]}catch(e){return []}};
-function lbBench(){const t=TRACKS[opts.track];try{const b=JSON.parse(ls.get('grid26.bench.'+t.id)||'null');if(b&&b.v===1&&Array.isArray(b.rows))return b.rows}catch(e){}
+// time-trial leaderboard: the ten fastest laps per track (each keeps the driver name it was set with),
+// plus four reference laps derived from the track's own speed profile
+let lbNew=0,lbFilter=null,lbLastD=0;
+const LB_KEEP=10;
+const lbLoad=id=>{try{const a=JSON.parse(ls.get('grid26.lb.'+id)||'[]');return Array.isArray(a)?a.filter(e=>e&&isFinite(e.t)).map(e=>Object.assign({},e,{trk:id,name:normalizePlayerName(e.name)})):[]}catch(e){return []}};
+function lbBench(id){try{const b=JSON.parse(ls.get('grid26.bench.'+id)||'null');if(b&&b.v===1&&Array.isArray(b.rows))return b.rows.map(r=>Object.assign({},r,{trk:id}))}catch(e){}
+  if(id!==TRACKS[opts.track].id)return []; // reference laps need that track loaded; they appear once it has been driven or selected
   ensureTrack();const pr=buildProfile(TEAMS[0]);let acc=0,s1=0,s2=0;const i1=Math.floor(SECT[0]/DS),i2=Math.floor(SECT[1]/DS);for(let i=0;i<N;i++){if(i===i1)s1=acc;if(i===i2)s2=acc;acc+=DS/Math.max(5,pr[i])}
   const rows=[[1.03,0,'S'],[1.07,1,'S'],[1.12,2,'M'],[1.18,4,'H']].map(([f,tm,ty])=>({t:+(acc*f).toFixed(3),s:[s1*f,(s2-s1)*f,(acc-s2)*f].map(x=>+x.toFixed(2)),team:tm,ty,ai:1}));
-  ls.set('grid26.bench.'+t.id,JSON.stringify({v:1,rows}));return rows}
-function lbAdd(lt,c){const id=TRACKS[opts.track].id,a=lbLoad(id),e={t:+lt.toFixed(3),s:c.secT.map(x=>+x.toFixed(2)),team:opts.team,ty:c.tyre?c.tyre.comp:'M',d:Date.now()};a.push(e);a.sort((x,y)=>x.t-y.t);const top=a.slice(0,5);ls.set('grid26.lb.'+id,JSON.stringify(top));const k=top.indexOf(e);if(k>=0)lbNew=e.d;return k}
-function showLB(){const t=TRACKS[opts.track],own=lbLoad(t.id),rows=own.concat(lbBench()).sort((a,b)=>a.t-b.t),best=own.length?own[0].d:0;
-  $('lbTitle').textContent=t.zh+' '+t.name;
-  $('lbBody').innerHTML=rows.map((r,k)=>`<tr class="${r.ai?'ai':'me'}${r.d&&r.d===lbNew?' new':''}"><td>${k+1}</td><td>${fmt(r.t)}${r.d&&r.d===lbNew&&r.d===best?'<span class="tag">NEW PB</span>':r.d&&r.d===lbNew?'<span class="tag">NEW</span>':r.d&&r.d===best?'<span class="tag">PB</span>':''}</td><td>${(r.s||[]).map(x=>(+x).toFixed(2)).join(' / ')}</td><td>${r.ai?'基準 · ':''}${(TEAMS[r.team]||TEAMS[0]).code}</td><td><i class="tdot" style="background:${(TYRES[r.ty]||TYRES.M).col}"></i>${(TYRES[r.ty]||TYRES.M).n}</td></tr>`).join('');
-  $('lbNote').textContent=own.length?'亮色是你的成績（最多保留 5 筆），灰色是基準成績。':'還沒有你的成績。灰色是依這條賽道算出來的基準成績，跑一圈計時賽就會上榜。';show('lb',true)}
+  ls.set('grid26.bench.'+id,JSON.stringify({v:1,rows}));return rows.map(r=>Object.assign({},r,{trk:id}))}
+function lbAdd(lt,c){const id=TRACKS[opts.track].id;let a;try{a=JSON.parse(ls.get('grid26.lb.'+id)||'[]');if(!Array.isArray(a))a=[]}catch(e){a=[]}
+  const t=TEAMS[opts.team],e={t:+lt.toFixed(3),s:c.secT.map(x=>+x.toFixed(2)),team:opts.team,num:t.nums[0],name:playerName(),ty:c.tyre?c.tyre.comp:'M',d:(lbLastD=Math.max(Date.now(),lbLastD+1))};
+  a.push(e);a.sort((x,y)=>x.t-y.t);const top=a.slice(0,LB_KEEP);ls.set('grid26.lb.'+id,JSON.stringify(top));
+  const k=top.indexOf(e);if(k>=0)lbNew=e.d;return k}
+function lbRender(){const cur=playerName(),all=lbFilter==='all',ids=all?TRACKS.map(t=>t.id):[lbFilter];
+  const own=[].concat(...ids.map(lbLoad)),bestOf={};own.forEach(r=>{if(r.name===cur&&(!bestOf[r.trk]||r.t<bestOf[r.trk]))bestOf[r.trk]=r.t});
+  const bench=all?[]:lbBench(lbFilter),rows=own.concat(bench).sort((a,b)=>a.t-b.t),trkName=id=>{const t=TRACKS.find(x=>x.id===id);return t?t.zh:id};
+  $('lbTitle').textContent=all?'全部賽道 · 總榜':(()=>{const t=TRACKS.find(x=>x.id===lbFilter);return t.zh+' '+t.name})();
+  $('lbCur').textContent=cur;
+  $('lbHead').innerHTML=`<tr><th>#</th><th>車手</th>${all?'<th>賽道</th>':''}<th>單圈</th>${all?'':'<th>S1 / S2 / S3</th>'}<th>車隊</th><th>輪胎</th></tr>`;
+  const cols=all?6:6;
+  $('lbBody').innerHTML=rows.length?rows.map((r,k)=>{const mine=!r.ai&&r.name===cur,tm=TEAMS[r.team]||TEAMS[0],ty=TYRES[r.ty]||TYRES.M,isNew=r.d&&r.d===lbNew,isPB=mine&&r.t===bestOf[r.trk];
+    const tag=isNew&&isPB?'<span class="tag">NEW PB</span>':isNew?'<span class="tag">NEW</span>':isPB?'<span class="tag">PB</span>':'';
+    const who=r.ai?`<span class="lbName">基準 · ${escHTML(tm.drivers[0])}</span>`:`<span class="lbName">${escHTML(r.name)}</span>${mine?'<span class="meTag">目前玩家</span>':''}`;
+    return `<tr class="${r.ai?'ai':'me'}${mine?' mine':''}${isNew?' new':''}"><td>${k+1}</td><td>${who}</td>${all?`<td>${escHTML(trkName(r.trk))}</td>`:''}<td>${fmt(r.t)}${tag}</td>${all?'':`<td>${(r.s||[]).map(x=>(+x).toFixed(2)).join(' / ')}</td>`}<td><i class="tdot" style="background:${tm.base}"></i>${tm.code}${r.num?' #'+r.num:''}</td><td><i class="tdot" style="background:${ty.col}"></i>${ty.n}</td></tr>`}).join('')
+   :`<tr class="empty"><td colspan="${cols}">${all?'還沒有任何單圈紀錄。選一條賽道跑一圈計時賽，成績就會出現在這裡。':'這條賽道還沒有紀錄。'}</td></tr>`;
+  const mineN=own.filter(r=>r.name===cur).length;
+  $('lbNote').textContent=all?(own.length?`共 ${own.length} 筆成績，依單圈時間排序（不同賽道的時間僅供參考）。亮框是「${cur}」的成績。`:'')
+    :(own.length?`每條賽道保留最快 ${LB_KEEP} 筆成績，亮框是「${cur}」的成績${mineN?'':'（目前車手在這條賽道還沒有成績）'}${bench.length?'；灰色是基準成績':''}。`:bench.length?'還沒有成績。灰色是依這條賽道算出來的基準成績，跑一圈計時賽就會上榜。':'跑一圈計時賽就會上榜；選過這條賽道後也會列出基準成績。')}
+function showLB(){const sel=$('lbTrack');if(!sel.options.length){sel.innerHTML='<option value="all">全部賽道（總榜）</option>'+TRACKS.map(t=>`<option value="${t.id}">${escHTML(t.zh)} ${escHTML(t.name)}</option>`).join('');sel.onchange=()=>{lbFilter=sel.value;lbRender()}}
+  lbFilter=TRACKS[opts.track].id;sel.value=lbFilter;lbRender();show('lb',true)}
 $('lbOpen1').onclick=showLB;$('lbOpen2').onclick=showLB;$('lbClose').onclick=()=>show('lb',false);
 // settings code: everything in grid26.settings (assists, car setup, keys, touch layout) as one string
-const cfgCode=()=>'G26.'+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,assist:settings.assist,setup:settings.setup,keys:settings.keys,touchLayout:settings.touchLayout||null,touchLayoutM:settings.touchLayoutM||null}))));
-function cfgApply(txt){try{const o=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim().replace(/^G26\./,'')))));if(!o||typeof o!=='object'||!o.assist)throw 0;ls.set('grid26.settings',JSON.stringify({assist:o.assist,setup:o.setup||{},keys:o.keys||{},touchLayout:o.touchLayout||undefined,touchLayoutM:o.touchLayoutM||undefined}));return true}catch(e){return false}}
+const cfgCode=()=>'G26.'+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,assist:settings.assist,setup:settings.setup,keys:settings.keys,touchLayout:settings.touchLayout||null,touchLayoutM:settings.touchLayoutM||null,name:ls.get('grid26.name')||''}))));
+function cfgApply(txt){try{const o=JSON.parse(decodeURIComponent(escape(atob(String(txt).trim().replace(/^G26\./,'')))));if(!o||typeof o!=='object'||!o.assist)throw 0;ls.set('grid26.settings',JSON.stringify({assist:o.assist,setup:o.setup||{},keys:o.keys||{},touchLayout:o.touchLayout||undefined,touchLayoutM:o.touchLayoutM||undefined}));if(typeof o.name==='string')ls.set('grid26.name',o.name.slice(0,16));return true}catch(e){return false}}
 function ttSwitchRender(){renderTyrePick();const on=opts.mode==='tt'&&!tut;$('ttSwitch').hidden=!on;$('ttSwitch').style.display=on?'grid':'none';if(!on)return;
   $('ttSel').innerHTML=TRACKS.map((t,i)=>`<option value="${i}"${i===opts.track?' selected':''}>${i===opts.track?'▶ ':''}${t.zh} ${t.name} · 難度 ${t.diff}/5</option>`).join('')}
 $('ttSel').onchange=e=>{const i=+e.target.value;if(i===opts.track||!(i>=0))return;opts.track=i;paused=false;screen(null);toast('載入 '+TRACKS[i].zh+'…');setTimeout(startRace,30)};

@@ -1,6 +1,11 @@
 'use strict';
 /* Grid 2026 — 設定 */
 /* ================= SETTINGS ================= */
+// player name: stored as typed, always read through normalizePlayerName (blank -> 玩家1, max 16 characters)
+const DEFAULT_PLAYER='玩家1';
+const normalizePlayerName=v=>{const s=Array.from(String(v==null?'':v).replace(/\s+/g,' ').trim()).slice(0,16).join('');return s||DEFAULT_PLAYER};
+const playerName=()=>normalizePlayerName(ls.get('grid26.name'));
+const escHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ACTIONS=[['throttle','油門'],['brake','煞車'],['left','左轉'],['right','右轉'],['shiftUp','升檔'],['shiftDown','降檔'],['aero','直道模式 X / Z'],['overtake','Overtake 超車模式'],['ersUp','電能模式 往上'],['ersDown','電能模式 往下'],['camera','切換視角'],['line','賽車線 完整／僅彎道／關閉'],['reset','回到賽道'],['mute','引擎聲開關'],['fullscreen','全螢幕'],['pause','暫停']];
 const DEF_KEYS={throttle:['KeyW','ArrowUp'],brake:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],shiftUp:['KeyE','PageUp'],shiftDown:['KeyQ','PageDown'],aero:['Space',null],overtake:['ShiftLeft','ShiftRight'],ersUp:['KeyF','Equal'],ersDown:['KeyV','Minus'],camera:['KeyC',null],line:['KeyL',null],reset:['KeyR',null],mute:['KeyM',null],fullscreen:['KeyG',null],pause:['Escape','KeyP']};
 const DEF_SET={keys:DEF_KEYS,assist:{gearbox:'auto',aero:'manual',steer:1,weight:1,dead:10,steerMode:'drag',vol:70,line:'full',fps:0,gfx:'mid',launch:'manual',guard:true,touch:'auto',ramp:false,wheelLock:120,autoPit:true},touchLayout:{},touchLayoutM:{},setup:{df:0,gearing:'std',bias:56,ers:'balance',tyre:'M',pitTyre:'M',mode:2,prevMode:2,trim:[0,0,0,0],charge:2}};
