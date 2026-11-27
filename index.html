@@ -111,6 +111,7 @@
         <div class="kvgrid" id="setupSum"></div>
         <p class="note" style="margin-top:10px">在「設定 → 車輛調校」修改下壓力、齒比、煞車平衡與 ERS 模式。</p>
       </div>
+      <div class="carCtl glass" id="carCtl"><button class="mini-btn" id="engBtn" type="button" aria-pressed="true">引擎聲：開</button><button class="mini-btn revBtn" id="revBtn" type="button">按住催油門</button><span class="carHint">拖曳畫面旋轉車輛</span></div>
       <div class="cta">
         <div class="ctaSum" id="ctaSum"></div>
         <button class="btn" id="toTracks" type="button">下一步 · 選擇賽道</button>
@@ -137,6 +138,7 @@
         <div class="tm" id="tdRef"></div>
         <p class="note" id="tdDesc" style="margin:10px 0"></p>
         <div class="spec" id="tdSpec"></div>
+        <div class="tdExtra"><span class="trkBest" id="trkBest"></span><button class="mini-btn" id="goSetup2" type="button">車輛調校 →</button></div>
         <div class="optl">模式</div>
         <div class="seg" id="optMode"><button type="button" id="m-race" data-v="race" aria-pressed="true">正賽</button><button type="button" id="m-tt" data-v="tt" aria-pressed="false">計時賽</button></div>
         <div id="ttOpts" hidden>
@@ -214,6 +216,7 @@
 </div>
 
 <!-- SETTINGS -->
+<nav id="mNav" hidden aria-label="步驟導覽"><button class="btn ghost" id="mPrev" type="button">上一步</button><div class="mDots" id="mDots" aria-hidden="true"><i></i><i></i><i></i><i></i></div><button class="btn" id="mNext" type="button">下一步</button></nav>
 <div class="ov dim" id="fsHelp" hidden style="z-index:95">
   <div class="res card">
     <div class="eyebrow">全螢幕</div>
@@ -257,6 +260,7 @@
 <script src="js/graphics.js"></script>
 <script src="js/tutorial.js"></script>
 <script src="js/fullscreen.js"></script>
+<script src="js/mobileflow.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
