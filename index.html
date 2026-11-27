@@ -92,27 +92,30 @@
 <!-- TEAM SELECT -->
 <div id="verTag" class="ver" style="position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(3px + env(safe-area-inset-bottom,0px));font:600 11px var(--f-mono);letter-spacing:.08em;color:#c9d1da;background:rgba(11,16,22,.72);padding:1px 8px;border-radius:3px;pointer-events:none"></div>
 <div class="ov" id="menu">
-  <div class="sheet">
-    <div>
-      <div class="topbar"><div class="eyebrow">步驟 1 / 2 · 選擇車隊</div><span style="display:flex;gap:8px"><button class="mini-btn fsBtn" type="button">全螢幕</button><button class="mini-btn" id="openTut" type="button">新手教學</button><button class="mini-btn" id="openSet1" type="button">設定</button></span></div>
+  <div class="sheet menuSheet">
+    <div class="menuMain">
+      <div class="topbar"><div class="eyebrow">步驟 1 / 2 · 選擇車隊</div><span class="tools"><span class="ver verChip"></span><button class="mini-btn fsBtn" type="button">全螢幕</button><button class="mini-btn" id="openTut" type="button">新手教學</button><button class="mini-btn" id="openSet1" type="button">設定</button></span></div>
       <h1>GRID <span>2026</span></h1>
       <p class="lede">車體依 2026 年技術規則建模：軸距 3.4 公尺、車寬 1.9 公尺、最低重量 768 公斤，前後翼可在彎道與直道模式間切換。五支車隊的性能分布，依今年車隊積分榜前五名換算。</p>
+      <label class="driverRow glass"><span class="dl">車手名稱</span><input id="pName" type="text" maxlength="16" placeholder="玩家1" autocomplete="off" spellcheck="false" enterkeyhint="done"><span class="dh">空白時顯示為「玩家1」，最多 16 字</span></label>
       <div class="teams" id="teams"></div>
     </div>
     <div class="side">
-      <div class="card">
-        <h3 id="selName">車隊</h3>
+      <div class="card glass">
+        <div class="selHead"><span class="selSw" id="selSw"></span><h3 id="selName">車隊</h3></div>
         <div id="stats"></div>
-        <p class="note" id="selNote" style="margin-top:8px"></p>
+        <p class="note" id="selNote" style="margin-top:10px"></p>
       </div>
-      <div class="card">
-        <h3>目前車輛調校</h3>
-        <div class="spec" id="setupSum"></div>
-        <p class="note" style="margin-top:8px">在「設定 → 車輛調校」修改下壓力、齒比、煞車平衡與 ERS 模式。</p>
+      <div class="card glass">
+        <div class="cardHead"><h3>目前車輛調校</h3><button class="mini-btn" id="goSetup" type="button">前往車輛調校 →</button></div>
+        <div class="kvgrid" id="setupSum"></div>
+        <p class="note" style="margin-top:10px">在「設定 → 車輛調校」修改下壓力、齒比、煞車平衡與 ERS 模式。</p>
       </div>
-      <button class="btn" id="toTracks" type="button">下一步 · 選擇賽道</button>
-      <p class="note">車隊名稱與塗裝為原創設計，不使用真實車隊商標。</p>
-      <p class="note ver" style="margin-top:6px;font-family:var(--f-mono);letter-spacing:.06em"></p>
+      <div class="cta">
+        <div class="ctaSum" id="ctaSum"></div>
+        <button class="btn" id="toTracks" type="button">下一步 · 選擇賽道</button>
+        <p class="disclaim">車隊名稱與塗裝為原創設計，不使用真實車隊商標。</p>
+      </div>
     </div>
   </div>
 </div>
@@ -176,10 +179,11 @@
 </div>
 
 <div class="ov dim" id="lb" hidden>
-  <div class="res card" style="max-width:640px;width:100%">
+  <div class="res card" style="max-width:720px;width:100%">
     <div class="eyebrow">計時賽排行榜</div>
     <h2 id="lbTitle"></h2>
-    <div class="lbwrap"><table><thead><tr><th>#</th><th>單圈</th><th>S1 / S2 / S3</th><th>車隊</th><th>輪胎</th></tr></thead><tbody id="lbBody"></tbody></table></div>
+    <div class="lbBar"><label class="lbSel"><span>賽道</span><select id="lbTrack" aria-label="依賽道篩選"></select></label><div class="lbCur">目前車手 <b id="lbCur"></b></div></div>
+    <div class="lbwrap"><table><thead id="lbHead"></thead><tbody id="lbBody"></tbody></table></div>
     <p class="note" id="lbNote" style="margin-top:10px"></p>
     <button class="btn" id="lbClose" type="button" style="margin-top:12px;width:100%">關閉</button>
   </div>
