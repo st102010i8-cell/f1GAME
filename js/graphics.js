@@ -32,7 +32,8 @@ function tickLaunchUI(){const on=clutchPhase(),held=on&&(input.clutchK||input.cl
 // colour = how hard the car would have to brake, from its speed right now, to make the slowest point still ahead
 const RL_W=150,RL_LA=230,rlSev=new Float32Array(RL_W);
 const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
-function rlSet(i,r,g,b,a){const put=o=>{rlCol[o]=r;rlCol[o+1]=g;rlCol[o+2]=b;rlCol[o+3]=a;rlCol[o+4]=r;rlCol[o+5]=g;rlCol[o+6]=b;rlCol[o+7]=a};put(i*8);if(i===0)put(N*8)}
+// the line ribbon has RIB_SUB rows per track sample (2 vertices = 8 floats per row); colour every row of sample i
+function rlSet(i,r,g,b,a){const put=o=>{rlCol[o]=r;rlCol[o+1]=g;rlCol[o+2]=b;rlCol[o+3]=a;rlCol[o+4]=r;rlCol[o+5]=g;rlCol[o+6]=b;rlCol[o+7]=a};for(let k=0;k<RIB_SUB;k++)put((i*RIB_SUB+k)*8);if(i===0)put(N*RIB_SUB*8)}
 function cycleLine(){const A=settings.assist,o=['full','corner','off'];A.line=o[(o.indexOf(A.line||'full')+1)%3];saveSettings();renderPauseLine();toast('賽車線：'+{full:'完整顯示',corner:'僅限彎道',off:'關閉'}[A.line])}
 function renderPauseLine(){const el=$('pauseLine');if(!el)return;const m=settings.assist.line||'full';[...el.children].forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===m)))}
 {const el=$('pauseLine');if(el)[...el.children].forEach(b=>b.onclick=()=>{settings.assist.line=b.dataset.v;saveSettings();renderPauseLine()})}
